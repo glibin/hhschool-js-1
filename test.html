@@ -1,0 +1,72 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<title>Школа программистов HH - JavaScript / Anton Ivanov / тест задания 1</title>
+	<meta charset="utf-8">
+</head>
+<body>
+<script src="js/main.js"></script>
+<script>
+
+    var numOfErrors = 0;
+
+    function test(name, result, expected) {
+        'use strict';
+
+        if (result !== expected) {
+            //noinspection JSLint
+            console.log(name + ': result = ' + result + ', expected = ' + expected);
+            //noinspection JSLint
+            numOfErrors++;
+        }
+
+    }
+
+    //noinspection JSLint
+    var pastEvents = cal.getPast();
+    test('Num. of past events', pastEvents.length, 1);
+    test('Past event name', pastEvents[0].name, 'Первая лекция');
+
+    var futureEvents = cal.getFuture();
+    test('Num. of future events', futureEvents.length, 1);
+    test('Future event name', futureEvents[0].name, 'Вторая лекция');
+
+    var byTagImportant = cal.getByTags(['important']);
+    test('Num. of events by tag important', byTagImportant.length, 1);
+    test('Tag important event name', byTagImportant[0].name, 'Вторая лекция');
+
+    var byTags = cal.getByTags(['hh', 'java script']);
+    test('Num. of events by tags', byTags.length, 2);
+
+    var byMissingTag = cal.getByTags(['missing']);
+    test('Num. of events by missing tag', byMissingTag.length, 0);
+
+    var testEvent = {
+        name: 'test',
+        dueDate: new Date((new Date()).getFullYear() + 1, 1),
+        tags: ['test']
+    };
+    var id = cal.add(testEvent);
+    test('New num. of past events', cal.getPast().length, 1);
+    test('New num. of future events', cal.getFuture().length, 2);
+    test('Num. of events by tag test', cal.getByTags(['test']).length, 1);
+
+    cal.edit(id, {name: 'test 1'});
+    var byTagTest = cal.getByTags(['test']);
+    test('New name of added event', byTagTest[0].name, 'test 1');
+
+    cal.remove(id);
+    test('Num. of events by tag test', cal.getByTags(['test']).length, 0);
+
+    if (numOfErrors === 0) {
+        //noinspection JSLint
+        console.log('All tests passed successfully');
+    } else {
+        //noinspection JSLint
+        console.log('see errors above');
+    }
+
+
+</script>
+</body>	
+</html>
