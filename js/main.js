@@ -98,7 +98,7 @@ function Calendar() {
         this.events[event.id] = event;
     };
 
-    this.removeEvent = function (eventId) {
+    this.deleteEvent = function (eventId) {
         delete this.events[eventId];
     };
 
