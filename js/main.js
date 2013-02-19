@@ -134,12 +134,12 @@ function EventManager() {
     };
 }
 
-function Participant(lastname, firstname) {
+function Participant(lastname, firstname, middlename, email) {
     'use strict';
-    this.firstname = firstname;
-    this.lastname = lastname;
-    this.middlename = '';
-    this.email = '';
+    this.firstname = firstname || '';
+    this.lastname = lastname || '';
+    this.middlename = middlename || '';
+    this.email = email || '';
     this.setMiddlename = function (middlename) {
         this.middlename = middlename;
         return this;
@@ -164,13 +164,14 @@ function Participant(lastname, firstname) {
 }
 var events = new EventManager();
 
-var dummyUser1 = (new Participant("Иванов","Иван")).setMiddlename("Иванович").setEmail("ivan@ivanov.ru");
-var dummyUser2 = (new Participant("Сергеев","Сергей")).setMiddlename("Сергеевич").setEmail("sergey@sergeev.ru");
-var dummyUser3 = (new Participant("Иноземцев","Александр")).setMiddlename("Олегович").setEmail("a.inozemtsev@me.com");
+var dummyUser1 = (new Participant("Иванов", "Иван", "Иванович", "ivan@ivanov.ru"));
+var dummyUser2 = (new Participant("Сергеев", "Сергей", "Сергеевич", "sergey@sergeev.ru"));
+var dummyUser3 = (new Participant("Иноземцев", "Александр", "Олегович", "a.inozemtsev@me.com"));
 
 var dummyEvent1 = (new Event("Купить батон")).setDate(new Date("2015-10-20")).setDescription("Сходить в магазин и купить батон.").addParticipant(dummyUser1).addParticipant(dummyUser2);
 var dummyEvent2 = (new Event("Купить молоко")).setDate(new Date("2011-10-20")).setDescription("Сходить в магазин и купить молоко.").addParticipant(dummyUser1).addParticipant(dummyUser2);
 var dummyEvent3 = (new Event("Сдать домашнее задание по JS")).setDate(new Date("2013-02-19")).setDescription("Cоздать консольное приложение-календарь с возможностью добавлять/удалять события.").addParticipant(dummyUser3);
+
 events.addEvent(dummyEvent1).addEvent(dummyEvent2).addEvent(dummyEvent3);
 
 
