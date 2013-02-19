@@ -50,7 +50,7 @@
 
     function getEvents() {
         var events = dataProvider.loadEvents();
-        if (!events) {
+        if (events.length == 0) {
             events = loadSampleEventsData();
             dataProvider.saveEvents(events);
         }

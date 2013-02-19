@@ -1,9 +1,5 @@
 <!DOCTYPE HTML>
 <html lang="en">
-
-    <!--TODO
-    make reset commit cancelable event edit/creation
-    -->
     <head>
         <title>zooble</title>
         <meta charset="utf-8">
@@ -53,7 +49,9 @@
                 <div class="event-date" data-bind="text: prettyEventDate"></div>
                 <div class="event-description" data-bind="text: description"></div>
                 <ul class="event-participants" data-bind="foreach: participants">
-                    <li class="event-participant" data-bind="text: fullName"></li>
+                    <li class="event-participant">
+                        <a data-bind="attr: {href: mailtoLink}, text: fullName"></a>
+                    </li>
                 </ul>
                 <div class="event-tags" data-bind="foreach: tags">
                     <div class="event-tag" data-bind="text: $data"></div>
@@ -74,15 +72,43 @@
             <label>Event description:
                 <input type="text" data-bind="value: description"/>
             </label>
+            <label>Event date:
+                <input type="text" data-bind="value: prettyEventDate"/>
+            </label>
+            <div>Participants:</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>First name</th>
+                        <th>Last name</th>
+                        <th>Patronymic</th>
+                        <th>Email</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: participants">
+                    <tr>
+                        <td><input type="text" data-bind="value: firstName"/></td>
+                        <td><input type="text" data-bind="value: lastName"/></td>
+                        <td><input type="text" data-bind="value: patronymic"/></td>
+                        <td><input type="text" data-bind="value: email"/></td>
+                        <td>
+                            <button data-bind="click: $parent.deleteParticipant">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button data-bind="click: addParticipant">Add participant</button>
+            <label>Tags (comma separated):
+                <input type="text" data-bind="value: tagsCsv">
+            </label>
         </script>
         <!--templates-->
-
-        <script type="text/javascript" src="js/lib/jquery-1.9.1.js"></script>
         <script type="text/javascript" src="js/lib/knockout-2.2.1.debug.js"></script>
         <script type="text/javascript" src="js/lib/knockout.validation.js"></script>
         <script type="text/javascript" src="js/lib/knockout.mapping.js"></script>
-
         <script type="text/javascript" src="js/knockout.extensions.js"></script>
+
         <script type="text/javascript">
             var Zooble = {};
         </script>

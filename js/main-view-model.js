@@ -4,7 +4,7 @@ Zooble.MainViewModel = (function (dataProvider, Event, Participant, util) {
 
         self.events = ko.observableArray(events);
 
-        this.selectedEvent = ko.observable();
+        self.selectedEvent = ko.observable();
         self.originalEvent = null;
         self.saveFunc = null;
         self.cancelFunc = null;
@@ -51,9 +51,12 @@ Zooble.MainViewModel = (function (dataProvider, Event, Participant, util) {
         });
 
         self.allTags = ko.computed(function () {
-            return self.filteredEvents().reduce(function (tags, event) {
-                return ko.utils.arrayGetDistinctValues(tags.concat(event.tags())).sort();
-            }, [])
+            var tags = [];
+            for (var i = 0; i < self.filteredEvents().length; i++) {
+                var event = self.filteredEvents()[i];
+                tags = tags.concat(event.tags());
+            }
+            return ko.utils.arrayGetDistinctValues(tags).sort();
         });
 
         self.eventTemplate = function (item) {

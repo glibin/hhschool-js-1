@@ -14,17 +14,21 @@ body * {
     font-family: Segoe UI, monospace;
 }
 
+a {
+    color: #ffffff;
+}
+
 #toolbar {
     float: left;
     width: 200px;
     height: 100%;
     overflow: hidden;
     margin: 5px;
-    border-right: 1px solid black;
+    border-right: 1px solid #ffffff;
 }
 
 #toolbar .toolbar-part {
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid #ffffff;
     padding: 10px;
 }
 

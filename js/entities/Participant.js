@@ -10,4 +10,8 @@ Zooble.Participant = function (firstName, lastName, patronymic, email) {
         var patronymicValue = !self.patronymic() ? "" : (" " + self.patronymic());
         return self.lastName() + " " + self.firstName() + patronymicValue;
     });
+
+    self.mailtoLink = ko.computed(function() {
+        return "mailto:" + self.email();
+    });
 };

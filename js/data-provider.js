@@ -1,10 +1,7 @@
 Zooble.dataProvider = (function (JSON, localStorage, entityJsonBuilder) {
     var eventsKey = "Zooble.events";
     var eventsAutoincrementKey = "Zooble.events.autoincrement";
-
-    function getEvents() {
-        return JSON.parse(localStorage.getItem(eventsKey));
-    }
+    var eventsData = JSON.parse(localStorage.getItem(eventsKey)) || [];
 
     function getEvent(eventsData, event) {
         return ko.utils.arrayFirst(eventsData, function (storedEvent) {
@@ -18,10 +15,6 @@ Zooble.dataProvider = (function (JSON, localStorage, entityJsonBuilder) {
 
     return {
         loadEvents : function () {
-            var eventsData = getEvents();
-            if (!eventsData) {
-                return null;
-            }
             var events = [];
             for (var i = 0; i < eventsData.length; i++) {
                 events.push(entityJsonBuilder.build("Event", eventsData[i]))
@@ -29,14 +22,12 @@ Zooble.dataProvider = (function (JSON, localStorage, entityJsonBuilder) {
             return events;
         },
         editEvent : function (event) {
-            var eventsData = getEvents();
             var storedEvent = getEvent(eventsData, event);
             ko.utils.arrayRemoveItem(eventsData, storedEvent);
             eventsData.push(ko.mapping.toJS(event));
             saveEvents(eventsData);
         },
         saveEvent : function (event) {
-            var eventsData = getEvents() || [];
             var autoIncrement = parseInt(localStorage.getItem(eventsAutoincrementKey)) + 1;
             event.id = autoIncrement;
             localStorage.setItem(eventsAutoincrementKey, autoIncrement);
@@ -44,14 +35,12 @@ Zooble.dataProvider = (function (JSON, localStorage, entityJsonBuilder) {
             saveEvents(eventsData);
         },
         saveEvents : function (events) {
-            var autoIncrement = events.reduce(function(maxId, event) {
-                return event.id > maxId ? event.id : maxId;
-            }, 0);
+            var autoIncrement = Math.max(events);
             localStorage.setItem(eventsAutoincrementKey, autoIncrement);
+            eventsData = eventsData.concat(events);
             saveEvents(events);
         },
         removeEvent : function (event) {
-            var eventsData = getEvents();
             var storedEvent = getEvent(eventsData, event);
             ko.utils.arrayRemoveItem(eventsData, storedEvent);
             saveEvents(eventsData);
