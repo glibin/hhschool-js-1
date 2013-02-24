@@ -4,7 +4,7 @@ function Calendar() {
 
   this.add = function(event) {
     this.events[this.counter++] = event;
-    return this.counter;
+    return this.counter - 1;
   }
 
   this.remove = function(eventID) {
