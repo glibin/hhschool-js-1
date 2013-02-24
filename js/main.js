@@ -1,10 +1,19 @@
+var array2set = function(arr) {
+  return arr.reduce(function(previousValue, currentValue) {
+                      previousValue[currentValue] = true;
+                      return previousValue;
+                    }, 
+                    {});
+}
+
 function Calendar() {
   this.events = {};
   this.counter = 0;
 
   this.add = function(event) {
-    this.events[this.counter++] = event;
-    return this.counter - 1;
+    eventID = this.counter++;
+    this.events[eventID] = event;
+    return eventID;
   }
 
   this.remove = function(eventID) {
@@ -34,8 +43,10 @@ function Calendar() {
   // returns events which have at least one tag from tagList
   this.filterByTags = function(tagsList) {
     function hasAtLeastOneTag(event) {
+      event_tags_set = array2set(event.tags);
+
       for (var tag_index = 0; tag_index < tagsList.length; ++tag_index) {
-        if (event.tags.indexOf(tagsList[tag_index]) != -1) {
+        if (event_tags_set.hasOwnProperty(tagsList[tag_index])) {
           return true;
         }
       }
@@ -47,23 +58,23 @@ function Calendar() {
   }
 }
 
-function Event(event) {
-  // analogous to dict.update in python.
-  // maybe there is something built in
-  this.set = function(updates) {
-    for (var property in updates) {
-      if (updates.hasOwnProperty(property)) {
-        this[property] = updates[property];
-      }
+// analogous to dict.update in python.
+// maybe there is something built in
+Event.prototype.set = function(updates) {
+  for (var property in updates) {
+    if (updates.hasOwnProperty(property)) {
+      this[property] = updates[property];
     }
   }
+}
 
-  var defaults = {description: 'no description available', 
-                  participants: [], 
-                  tags: []}
+Event.prototype.defaults = {description: 'no description available', 
+                            participants: [], 
+                            tags: []}
 
+function Event(event) {
   this.dateCreated  = new Date(); 
-  this.set(defaults); 
+  this.set(Event.prototype.defaults); 
   this.set(event);
 } 
 
