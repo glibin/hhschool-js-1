@@ -33,7 +33,7 @@
 
 /**
  * Create hash set object
- * @param array (optional) Array with values to fill the hash set being created with.
+ * @param array [optional] Array with values to fill the hash set being created with.
  * @constructor
  */
 function Set(array) {
@@ -377,9 +377,7 @@ EventManager.prototype.getFutureEvents = function () {
         now = new Date();
     for (i = 0; i < this._events.length; i++) {
         event = this._events[i];
-        if (event.getEventDate() <= now) { // better yet to use binary search, but this is too complicated
-            continue;
-        } else {
+        if (event.getEventDate() > now) { // better yet to use binary search, but this is too complicated
             future_events.push(event);
         }
     }
@@ -392,7 +390,7 @@ EventManager.prototype.getFutureEvents = function () {
  */
 EventManager.prototype.dump = function () {
     "use strict";
-    return JSON.stringify(eventManager, "", 4);
+    return JSON.stringify(eventManager, null, 4);
 };
 
 
@@ -423,6 +421,7 @@ function createSetter(propertyName) {
 // ########################################################################################################
 
 
+
 var eventManager = new EventManager();
 
 person1 = new Person("Oleg", "Golovin", "Valerievich", "ovgolovinBarkGmail.com");
@@ -430,36 +429,36 @@ person2 = new Person("Yan", "Romanikhin");
 person3 = new Person("Anton", "Ivanov");
 
 
-var event = new Event("Passed meeting");
-event.addTag("Archive").addTag("School");
-var date = new Date();
-date.setDate(date.getDate() -1);
-event.setEventDate(date);
-event.addPerson(person1).addPerson(person2);
-eventManager.addEvent(event);
+ev = new Event("Passed meeting");
+ev.addTag("Archive").addTag("School");
+date = new Date();
+date.setDate(date.getDate() - 1);
+ev.setEventDate(date);
+ev.addPerson(person1).addPerson(person2);
+eventManager.addEvent(ev);
 
-var event = new Event("Future meeting 1");
-event.addTag("Important").addTag("School");
-var date = new Date();
+ev = new Event("Future meeting 1");
+ev.addTag("Important").addTag("School");
+date = new Date();
 date.setDate(date.getDate() + 1);
-event.setEventDate(date);
-event.addPerson(person2).addPerson(person3);
-eventManager.addEvent(event);
+ev.setEventDate(date);
+ev.addPerson(person2).addPerson(person3);
+eventManager.addEvent(ev);
 
-var event = new Event("Future meeting 2");
-event.addTag("waste_of_time").addTag("School");
-var date = new Date();
+ev = new Event("Future meeting 2");
+ev.addTag("waste_of_time").addTag("School");
+date = new Date();
 date.setDate(date.getDate() + 2);
-event.setEventDate(date);
-event.addPerson(person1).addPerson(person3);
-eventManager.addEvent(event);
+ev.setEventDate(date);
+ev.addPerson(person1).addPerson(person3);
+eventManager.addEvent(ev);
 
-var event = new Event("Future meeting to delete");
-event.addTag("delete");
-var date = new Date();
+ev = new Event("Future meeting to delete");
+ev.addTag("delete");
+date = new Date();
 date.setDate(date.getDate() + 10);
-event.setEventDate(date);
-eventManager.addEvent(event);
+ev.setEventDate(date);
+eventManager.addEvent(ev);
 
 
 console.log("Previous events:");
@@ -472,20 +471,20 @@ console.log("With tags School and Imporant:");
 console.log(eventManager.getEventsFilteredByTag("Important", "School"));
 
 console.log("Deleting event (with delete tag).");
-var id = eventManager.getEventsFilteredByTag("delete")[0].getId();
+id = eventManager.getEventsFilteredByTag("delete")[0].getId();
 eventManager.removeEvent(id);
 console.log("Future events:");
 console.log(eventManager.getFutureEvents());
 
 console.log("Turning passed meeting into its sequel.");
-var event = eventManager.getPreviousEvents()[0];
-event.setDescription("Sheer waste of time");
-event.setName("Second part of the meeting");
-eventManager.removeEvent(event.getId());
-var date = event.getEventDate();
+ev = eventManager.getPreviousEvents()[0];
+ev.setDescription("Sheer waste of time");
+ev.setName("Second part of the meeting");
+eventManager.removeEvent(ev.getId());
+date = ev.getEventDate();
 date = date.setDate(date.getDate() + 20);
-event.setEventDate(date);
-eventManager.addEvent(event);
+ev.setEventDate(date);
+eventManager.addEvent(ev);
 console.log("Previous events:");
 console.log(eventManager.getPreviousEvents());
 console.log("Future events:");
