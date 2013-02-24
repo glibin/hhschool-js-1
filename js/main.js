@@ -1,3 +1,4 @@
+// compatibility problems because of reduce
 var array2set = function(arr) {
   return arr.reduce(function(previousValue, currentValue) {
                       previousValue[currentValue] = true;
