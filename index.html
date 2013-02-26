@@ -5,7 +5,117 @@
 	<meta charset="utf-8">
 </head>
 <body>
-	
-<script src="js/main.js"></script>	
+
+    <link type="text/css" rel="stylesheet" href="css/jquery-ui-1.8.16.custom.css" />
+    <link type="text/css" rel="stylesheet" href="css/bootstrap.css" />
+    <link type="text/css" rel="stylesheet" href="css/calendar.css" />
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.1/themes/base/jquery-ui.css" />
+
+
+    <div id="calendar" class="container">
+
+        <div id="newEvent">
+            <h3>Создать новое событие</h3>
+            <hr/>
+            <fieldset>
+                <div class="clearfix">
+                    <label>Название:</label>
+                    <div class="input">
+                        <textarea id="eventName" class="small"></textarea>
+                    </div>
+                </div>
+                <div class="clearfix">
+                    <label>Дата события:</label>
+                    <div class="input">
+                        <input id="eventDate" class="small" type="text" />
+                    </div>
+                </div>
+                <div class="clearfix">
+                    <label>Описание:</label>
+                    <div class="input">
+                        <textarea id="eventDescription" class="medium"></textarea>
+                    </div>
+                </div>
+                <div class="actions">
+                    <input id="create" type="button" class="btn primary" value="Create" />
+                    <input id="cancel" type="button" class="btn" value="Cancel" />
+                </div>
+            </fieldset>
+        </div>
+
+
+        <table id="eventList">
+            <tr>
+                <th class="name">Название</th>
+                <th class="eventDate">Дата создания</th>
+                <th class="creationDate">Дата события</th>
+                <th class="description">Описание</th>
+            </tr>
+        </table>
+
+        <div id="filter">
+            <div class="span6">&nbsp;</div>
+            <input type="checkbox" id="showPast" checked>
+                <span> Показывать прошедшие события </span>
+            </input>
+            <br/>
+            <input type="checkbox" id="showFuture" checked>
+                <span> Показывать будущие события </span>
+            </input>
+            <div class="span6">&nbsp;</div>
+        </div>
+
+        <div id="newEventButton" class="row">
+            <div class="span6">&nbsp;</div>
+            <div class="span4">
+                <input type="button" class="btn primary large" value="Create new" />
+            </div>
+            <div class="span6">&nbsp;</div>
+        </div>
+    </div>
+
+    <br/>
+
+    <div class="footer" style="text-align: center;">
+        <span>Модификация даты события и описания - двойной клик на поле</span>
+    </div>
+
+    <script id="item-template" type="text/template">
+        <td class="name">
+            <div class="display"><%= name %></div>
+            <div class="edit">
+                <input type="text" class="small name-input" />
+            </div>
+        </td>
+        <td class="creationDate">
+            <div class="display"><%= $.datepicker.formatDate('yy-mm-dd', creationDate) %></div>
+            <div class="edit">
+                <input type="text" class="small creation-date-input" />
+            </div>
+        </td>
+        <td class="eventDate">
+            <div class="display"><%=  $.datepicker.formatDate('yy-mm-dd', eventDate) %></div>
+            <div class="edit">
+                <input type="text" class="small event-date-input" />
+            </div>
+        </td>
+        <td class="description">
+            <div class="display"><%= description %></div>
+            <div class="edit">
+                <input type="text" class="large description-input" />
+            </div>
+        </td>
+        <td><span class="ui-icon ui-icon-trash remove-event" title="Remove event"></span></td>
+    </script>
+
+    <script src="js/lib/json2.js"></script>
+    <script src="js/lib/jquery.js"></script>
+    <script src="js/lib/jquery-ui-1.10.1.custom.js"></script>
+    <script src="js/lib/underscore.js"></script>
+    <script src="js/lib/backbone.js"></script>
+    <script src="js/lib/backbone-localstorage.js"></script>
+    <script src="../hhschool-js-1/js/main.js"></script>
+
+
 </body>	
 </html>		
