@@ -5,7 +5,11 @@
 	<meta charset="utf-8">
 </head>
 <body>
+
+<script src="js/underscore.js"></script>
+<script src="js/backbone.js"></script>
 <script src="js/main.js"></script>
+
 <script>
 
     var numOfErrors = 0;
@@ -25,15 +29,15 @@
     //noinspection JSLint
     var pastEvents = cal.getPast();
     test('Num. of past events', pastEvents.length, 1);
-    test('Past event name', pastEvents[0].name, 'Первая лекция');
+    test('Past event name', pastEvents[0].get('name'), 'Первая лекция');
 
     var futureEvents = cal.getFuture();
     test('Num. of future events', futureEvents.length, 1);
-    test('Future event name', futureEvents[0].name, 'Вторая лекция');
+    test('Future event name', futureEvents[0].get('name'), 'Вторая лекция');
 
     var byTagImportant = cal.getByTags(['important']);
     test('Num. of events by tag important', byTagImportant.length, 1);
-    test('Tag important event name', byTagImportant[0].name, 'Вторая лекция');
+    test('Tag important event name', byTagImportant[0].get('name'), 'Вторая лекция');
 
     var byTags = cal.getByTags(['hh', 'java script']);
     test('Num. of events by tags', byTags.length, 2);
@@ -53,7 +57,7 @@
 
     cal.edit(id, {name: 'test 1'});
     var byTagTest = cal.getByTags(['test']);
-    test('New name of added event', byTagTest[0].name, 'test 1');
+    test('New name of added event', byTagTest[0].get('name'), 'test 1');
 
     cal.remove(id);
     test('Num. of events by tag test', cal.getByTags(['test']).length, 0);

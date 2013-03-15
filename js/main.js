@@ -1,304 +1,248 @@
 
-/* I ignored some JSLint checks:
-- unexpected '++', Why JSLint does not like ++?
-- combine variable declaration with the previous 'var' statement */
-
-// TODO: tests
-
-/**
- * Member of event
- * @param source object with Member properties
- * @constructor
- */
-function Member(source) {
-    'use strict';
-
-    this.name = source.name || '';
-    this.lastName = source.lastName || '';
-
-    this.patronymic = source.patronymic || '';
-    this.email = source.email || '';
-
-}
-
-/**
- * Calendar event
- * @param source object with event properties
- * @constructor
- */
-function Event(source) {
+(function ($, _, Backbone) {
     'use strict';
 
     /**
-     * Sets all keys of this to values of keys of source.
-     * @param source
+     * Member of event
+     * @param source object with Member properties
+     * @constructor
      */
-    this.set = function (source) {
-
-        var key;
-        //noinspection JSLint,JSHint
-        for (key in source) {
-            this[key] = source[key];
-        }
-
-        this.name = this.name || '';
-        this.description = this.description || '';
-
-        this.tags = this.tags || [];
-        // we could store tags in object instead of array
-        // thus quickly determine whether event has or has not particular tag
-        // but this is unnecessary optimisation:
-        // we are not expect event to have many tags
-        // so let's keep things simple
-
-        this.members = this.members || [];
-
-    };
-
-    this.set(source);
-    this.creationDate = new Date();
-
-}
-
-function compareEventsByDueDate(event1, event2) {
-    'use strict';
-
-    return event1.dueDate - event2.dueDate;
-
-}
-
-/**
- * Simple calendar - collection of events that can be added, edited, removed, get future/past, get by tag etc.
- * @constructor
- */
-function Calendar() {
-    'use strict';
-
-    var events = []; // internal array of events
-    //noinspection JSLint
-    var nextEventId = 0;
-
-    //noinspection JSLint
-    /**
-     * Adds event to the internal array and assigns id.
-     * Do not maintain internal array sorted by due date.
-     * @param extEvent event to add
-     * @return {id} permanent id of added event
-     */
-    var addWithID = function (extEvent) {
-
-        var intEvent = new Event(extEvent);
-        intEvent.id = nextEventId;
-        //noinspection JSLint
-        nextEventId++;
-        events.push(intEvent);
-        return intEvent.id;
-
-    };
-
-    //noinspection JSLint
-    /**
-     * Sorts internal array of events by due date
-     */
-    var sortEventsByDueDate = function () {
-
-        events.sort(compareEventsByDueDate);
-
-    };
+    function Member(source) {
+        this.name = source.name || '';
+        this.lastName = source.lastName || '';
+        this.patronymic = source.patronymic || '';
+        this.email = source.email || '';
+    }
 
     /**
-     * Adds event to the calendar.
-     * @param extEvent event to add
-     * @return {id} permanent id of the added event.
+     * Calendar event model
      */
-    this.add = function (extEvent) {
+    var EventModel = Backbone.Model.extend({
 
-        var eventID = addWithID(extEvent);
+        defaults: {
 
-        // I think it is useful to keep events sorted by due date:
-        // it is nice to show them sorted by due date
-        // it is slightly faster to get future and past events
-        sortEventsByDueDate();
+            name: '',
+            description: '',
+            dueDate: undefined,
+            tags: [],
+            // we could store tags in object instead of array
+            // thus quickly determine whether event has or has not particular tag
+            // but this is unnecessary optimisation:
+            // we are not expect event to have many
 
-        return eventID;
+            members: [],
+            creationDate: new Date()
 
-    };
+        },
 
-    /**
-     * Adds events to the calendar.
-     * @param extEvents array of events to add
-     * @return {Array} array of added events (careful! it is exactly the internal array of calendar events)
-     */
-    this.load = function (extEvents) {
+        // TODO: we can somehow use it with save method
+        validate: function (attribs) {
 
-        // add every external event to internal array of events
-        events = [];
-        var i;
-        //noinspection JSLint
-        for (i = 0; i < extEvents.length; i++) {
-            addWithID(extEvents[i]);
-        }
-
-        // I mentioned above that it is useful to keep events sorted by due date.
-        sortEventsByDueDate();
-
-        // I do not know whether it is a javaScript style to return 'private' object
-        // In java I would make a deep copy, but let's keep things simple
-        return events;
-
-    };
-
-    //noinspection JSLint
-    /**
-     * Gets index of event in the internal array by event id.
-     * @param id id of the event
-     * @return {Number} index in the internal array
-     */
-    var getIndexOfEventById = function (id) {
-
-        // of course it is long find by exhaustive search
-        // if I used index in array as id - I would find at O(1)
-        // but array index may change
-        // and I wanted to keep id permanent
-        // so I decided that exhaustive search is not so bad for learning task
-        var i;
-        //noinspection JSLint
-        for (i = 0; i < events.length; i++) {
-            if (events[i].id === id) {
-                return i;
+            if (!attribs.name) {
+                return 'Name is empty!';
             }
-        }
 
-        return -1;
-
-    };
-
-    /**
-     * Edits event with particular id.
-     * @param id id of the event to edit.
-     * @param newProps object with new event properties.
-     * @return {Boolean} whether event was found by id and changed or not.
-     */
-    this.edit = function (id, newProps) {
-
-        var index = getIndexOfEventById(id);
-        if (index === -1) {
-            return false;
-        }
-
-        events[index].set(newProps);
-
-        // if dueDate was changed - maintain events in sorted order
-        //noinspection JSLint
-        if ('dueDate' in newProps) {
-            sortEventsByDueDate();
-        }
-
-        return true;
-
-    };
-
-    /**
-     * Removes event by id
-     * @param id id of the event to remove
-     * @return {Boolean} whether event was found and removed or not
-     */
-    this.remove = function (id) {
-
-        var index = getIndexOfEventById(id);
-        if (index === -1) {
-            return false;
-        }
-
-        events.splice(index, 1);
-        return true;
-
-    };
-
-    //noinspection JSLint
-    /**
-     * Gets index of first future event.
-     * If there is no future event - returns index of past last element.
-     * @return {index}
-     */
-    var getIndexOfFirstFutureEvent = function () {
-
-        // gets index of first future event
-        // if there is no future event - returns events.length
-
-        var curDate = new Date();
-        //noinspection JSLint
-        var i;
-        //noinspection JSLint
-        for (i = 0; i < events.length; i++) {
-            if (events[i].dueDate >= curDate) {
-                break;
+            if (!attribs.dueDate) {
+                return 'Due date is empty!';
             }
+
+            return undefined;
+
+        },
+
+        urlRoot: '/events',
+
+        initialize: function () {
+
+            /*this.on('error', function (model, error) {
+                //console.log(error);
+            });
+
+            this.on('change:name', function() {
+                console.log(this.get('name'), 'changed name to', this.get('name'));
+            });
+
+            this.on('change:description', function() {
+                console.log(this.get('name'), 'changed description to', this.get('description'));
+            });*/
+
         }
 
-        return i;
+    }),
 
-    };
+    CalendarCollection = Backbone.Collection.extend({
 
-    /**
-     * Returns array containing past events.
-     * @return {Array}
-     */
-    this.getPast = function () {
+        model: EventModel,
 
-        // our events are sorted by dueDate
-        // thus to get past events we can make slice from the beginning to the first future event
-        var i = getIndexOfFirstFutureEvent();
-        return events.slice(0, i);
+        comparator: function (eventModel) {
+            return eventModel.get('dueDate');
+        },
 
-    };
+        // TODO: localStorage
+        //localStorage: new Backbone.LocalStorage('calendar-backbone'),
 
-    /**
-     * Returns array containing future events.
-     * @return {Array}
-     */
-    this.getFuture = function () {
+        /**
+         * Returns array containing past events.
+         * @return {Array}
+         */
+        getPast: function () {
 
-        // our events are sorted by dueDate
-        // thus to get future events we can make slice from the first future event to the end
-        var i = getIndexOfFirstFutureEvent();
-        return events.slice(i);
+            var curDate = new Date();
+            return this.filter(function (eventModel) {
+                return eventModel.get('dueDate') <= curDate;
+            });
 
-    };
+        },
 
-    /**
-     * Returns array of events that have one of the given tags
-     * @param tags array of tags
-     * @return {Array} array of found events
-     */
-    this.getByTags = function (tags) {
+        /**
+         * Returns array containing future events.
+         * @return {Array}
+         */
+        getFuture: function () {
 
-        var i, j;
-        //noinspection JSLint
-        var outEvents = [];
-        //noinspection JSLint
-        for (i = 0; i < events.length; i++) {
+            var curDate = new Date();
+            return this.filter(function (eventModel) {
+                return eventModel.get('dueDate') > curDate;
+            });
 
-            //noinspection JSLint
-            for (j = 0; j < tags.length; j++) {
+        },
 
-                if (events[i].tags.indexOf(tags[j]) !== -1) {
-                    outEvents.push(events[i]);
-                    break;
+        /**
+         * Returns array of events that have one of the given tags
+         * @param tags array of tags
+         * @return {Array} array of found events
+         */
+        getByTags: function (tags) {
+
+            return this.filter(function (eventModel) {
+
+                var j,
+                    eventModelTags = eventModel.get('tags');
+                for (j = 0; j < tags.length; j += 1) {
+
+                    if (eventModelTags.indexOf(tags[j]) !== -1) {
+                        return true;
+                    }
+
                 }
 
-            }
+                return false;
+
+            });
 
         }
 
-        return outEvents;
+    }),
 
-    };
+    EventView = Backbone.View.extend({
 
-}
+        tagName: 'tr',
+        className: 'eventContainer',
+        template: _.template($('#event-template').html()),
 
-var preparedData = [
-    {
+        events: {
+            'click .remove': 'destroyModel'
+        },
+
+        initialize: function() {
+            this.listenTo(this.model, 'destroy', this.remove);
+        },
+
+        render: function () {
+
+            var modelJSON = this.model.toJSON();
+            modelJSON.cid = this.model.cid;
+            // TODO: show members properly
+            var html = this.template(modelJSON);
+            this.$el.html(html);
+            return this;
+
+        },
+
+        destroyModel: function () {
+            this.model.destroy();
+        }
+
+    }),
+
+    CalendarView = Backbone.View.extend({
+
+        el: '#page',
+        compiledTemplate: _.template($('#calendar-template').html(), {}),
+
+        render: function () {
+
+            this.$el.html(this.compiledTemplate);
+            var calendarBody = $('#calendar-body');
+
+            _.each(this.collection.models, function(eventModel) {
+                var eventView = new EventView({model: eventModel});
+                calendarBody.append(eventView.render().el);
+            });
+            return this;
+
+        }
+
+        /*initialize: function() {
+         // TODO: can we redraw only a model, not whole calendar?
+         this.listenTo(this.model, 'change', this.render);
+         }*/
+
+    }),
+
+    EditEventView = Backbone.View.extend({
+
+        el: '#page',
+
+        template: _.template($('#edit-event-template').html()),
+
+        render: function () {
+
+            // TODO: due date is not date!
+            this.$el.html(this.template({eventModel: this.model}));
+			$('.datepicker').datepicker({format: 'dd-mm-yyyy'});
+            return this;
+
+        },
+
+        events: {
+            'submit .edit-event-form': 'saveEvent',
+            'click .delete': 'deleteEvent'
+        },
+
+        saveEvent: function (event) {
+
+            var eventDetails = $(event.currentTarget).serializeObject();
+            if (!this.model) {
+                this.model = new EventModel(eventDetails);
+                this.collection.add(this.model);
+            } else {
+                this.model.set(eventDetails);
+            }
+            router.navigate('', {trigger: true});
+            return false;
+
+        },
+
+        deleteEvent: function (event) {
+            this.model.collection.remove(this.model);
+            router.navigate('', {trigger: true});
+            return false;
+
+        }
+
+    }),
+
+    // predefined event 1 for demonstration
+    eventModel1 = new EventModel({
+        name: 'Первая лекция',
+        description: 'Первая лекция по js',
+        dueDate: new Date(2013, 1, 11, 17, 0),
+        tags: ['лекция', 'java script', 'hh']
+    }),
+
+    // predefined event 2 for demonstration
+    eventModel2 = new EventModel({
         name: 'Вторая лекция',
         description: 'Вторая лекция по js',
         dueDate: new Date(new Date().getFullYear() + 1, 0, 1, 17),
@@ -311,19 +255,52 @@ var preparedData = [
             {
                 name: 'Vitaly',
                 lastName: 'Glibin'
-            }
-        ]
-    },
-    {
-        name: 'Первая лекция',
-        description: 'Первая лекция по js',
-        dueDate: new Date(2013, 1, 11, 17, 0),
-        tags: ['лекция', 'java script', 'hh']
-    }
-];
+            }]
+    }),
 
-//noinspection JSLint,JSHint
-var cal = new Calendar();
-cal.load(preparedData);
-//noinspection JSHint
-console.log('Created predefined calendar cal and loaded sample data into it');
+    // predefined calendar
+    calendarCollection = new CalendarCollection([eventModel1, eventModel2]),
+
+    Router = Backbone.Router.extend({
+
+        routes: {
+            '': 'home',
+            'new': 'editEvent',
+            'edit/:cid': 'editEvent'
+        },
+
+        home: function () {
+            // TODO: how long does this object live?
+            (new CalendarView({collection: calendarCollection})).render();
+        },
+
+        editEvent: function (cid) {
+            var eventModel = calendarCollection.get(cid);
+            // TODO: how long does this object live?
+            (new EditEventView({model: eventModel, collection: calendarCollection})).render();
+        }
+
+    }),
+
+    router = new Router();
+
+    Backbone.history.start();
+
+    $.fn.serializeObject = function () {
+        var o = {},
+            a = this.serializeArray();
+        $.each(a, function() {
+            if (o[this.name] !== undefined) {
+                if (!o[this.name].push) {
+                    o[this.name] = [o[this.name]];
+                }
+                o[this.name].push(this.value || '');
+            } else {
+                o[this.name] = this.value || '';
+            }
+        });
+        return o;
+    };
+
+}) (jQuery, _, Backbone);
+

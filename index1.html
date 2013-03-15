@@ -3,21 +3,70 @@
 <head>
 	<title>Школа программистов HH - JavaScript / задание 1 / Иванов Антон</title>
 	<meta charset="utf-8">
-    <link rel="stylesheet" href="css/bootstrap.css">
-    <link rel="stylesheet" href="css/datepicker.css">
+    <link rel="stylesheet" href="css/calendar.css"/>
+    <!-- <link rel="stylesheet" href="css/bootstrap.css"/> -->
+    <!-- <link rel="stylesheet" href="css/datepicker.css"> -->
 </head>
 <body>
 
-<!-- Header -->
+<div class="header">
+
+    <div class="header-buttons">
+        <div class="header-button"><div class="header-button__text">Добавить</div></div>
+        <div class="header-button"><div class="header-button__text">Обновить</div></div>
+    </div>
+
+    <div class="header-search">
+        <img class="header-search__img" src="imgs/search.png" alt="search" />
+        <input class="header-search__input" type="text" />
+        <!-- TODO: tip -->
+    </div>
+
+</div>
+
+<div class="calendar">
+
+    <div class="calendar-controls">
+
+        <div class="calendar__month">Март 2013</div>
+
+    </div>
+
+    <table class="calendar-table">
+
+        <tr class="calendar-table-row">
+            <td class="calendar-table-cell">Понедельник, 25</td>
+            <td class="calendar-table-cell">Вторник, 26</td>
+            <td class="calendar-table-cell">Среда, 27</td>
+            <td class="calendar-table-cell">Четверг, 28</td>
+            <td class="calendar-table-cell">Пятница, 1</td>
+            <td class="calendar-table-cell">Суббота, 2</td>
+            <td class="calendar-table-cell">Воскресенье, 3</td>
+        </tr>
+        <tr class="calendar-table-row">
+            <td class="calendar-table-cell">4</td>
+            <td class="calendar-table-cell">5</td>
+            <td class="calendar-table-cell">6</td>
+            <td class="calendar-table-cell">7</td>
+            <td class="calendar-table-cell">8</td>
+            <td class="calendar-table-cell">9</td>
+            <td class="calendar-table-cell">10</td>
+        </tr>
+
+    </table>
+
+</div>
+
+<!-- Header
 <div class="container">
 
-    <h1>Calendar</h1>
+
     <hr />
     <div id="page"></div>
 
 </div>
 
-<!-- Calendar template -->
+<!-- Calendar template
 <script type="text/template" id="calendar-template">
     <a href="#/new" class="btn btn-primary">New event</a>
     <hr />
@@ -34,7 +83,7 @@
     </table>
 </script>
 
-<!-- Event template -->
+<!-- Event template
 <script type="text/template" id="event-template">
     <td><%= name %></td>
     <td><%= description %></td>
@@ -45,7 +94,7 @@
     <td><a class="btn btn-danger remove">Remove</a></td>
 </script>
 
-<!-- Edit event template -->
+<!-- Edit event template
 <script type="text/template" id="edit-event-template">
     <form class="edit-event-form">
         <legend ><%= eventModel ? 'Update' : 'Create' %> event</legend>
@@ -75,12 +124,12 @@
     </form>
 </script>
 
-<!-- Scripts -->
+<!-- Scripts
 <script src="js/jquery.js"></script>
 <script src="js/underscore.js"></script>
 <script src="js/backbone.js"></script>
 <script src="js/bootstrap-datepicker.js"></script>
-<script src="js/main.js"></script>
+<script src="js/main.js"></script> -->
 
-</body>	
-</html>		
+</body>
+</html>
