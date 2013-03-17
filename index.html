@@ -1,48 +1,69 @@
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
-	<title>Школа программистов HH - JavaScript / задание 1 / Иванов Антон</title>
-	<meta charset="utf-8">
-    <link rel="stylesheet" href="css/bootstrap.css">
-    <link rel="stylesheet" href="css/datepicker.css">
+    <title>Школа программистов HH - JavaScript / задание 1 / Иванов Антон</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/calendar.css"/>
+    <link rel="stylesheet" href="css/bootstrap.css"/>
 </head>
 <body>
 
-<!-- Header -->
-<div class="container">
+<div class="header" id="header">
 
-    <h1>Calendar</h1>
-    <hr />
-    <div id="page"></div>
+
 
 </div>
 
-<!-- Calendar template -->
-<script type="text/template" id="calendar-template">
-    <a href="#/new" class="btn btn-primary">New event</a>
-    <hr />
-    <table class="table">
-        <thead>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Due date</th>
-            <th>Tags</th>
-            <th>Members</th>
-        </thead>
-        <tbody id="calendar-body">
-        </tbody>
+<div class="calendar">
+
+    <div class="calendar-header">
+
+        <div class="calendar-header__month">Март 2013</div>
+
+    </div>
+
+    <table id="calendar-table" class="calendar-table">
+
+
     </table>
+
+</div>
+
+<!-- Header template -->
+<script type="text/template" id="header-template">
+
+    <div class="header-buttons">
+        <button class="header-button" id='add-event'>Добавить</button>
+        <button class="header-button">Обновить</button>
+    </div>
+
+    <div class="header-search">
+        <img class="header-search__img" src="imgs/search.png" alt="search" />
+        <input class="header-search__input" type="text" />
+        <!-- TODO: tip -->
+    </div>
+
+</script>
+
+<!-- Add event template -->
+<script type="text/template" id="add-event-template">
+
+    <label>Name
+        <input id="add-event__name" type="text" autofocus="true">
+    </label>
+    <label>Date
+        <!-- TODO: date and time -->
+        <input id="add-event__date" type="text" value="<%= cur_date %>">
+    </label>
+    <!-- TODO: Enter does not work -->
+    <button id="add-event__create">Создать</button>
+
 </script>
 
 <!-- Event template -->
-<script type="text/template" id="event-template">
-    <td><%= name %></td>
-    <td><%= description %></td>
-    <td><%= dueDate %></td>
-    <td><%= tags %></td>
-    <td><%= members %></td>
-    <td><a href="#/edit/<%= cid %>" class="btn">Edit</a></td>
-    <td><a class="btn btn-danger remove">Remove</a></td>
+<script type="text/template" id="cell-event-template">
+    <div class="calendar-cell-event__name"><%= name %></div>
+    <div class="calendar-cell-event__members"><%= members %></div>
 </script>
 
 <!-- Edit event template -->
@@ -77,10 +98,28 @@
 
 <!-- Scripts -->
 <script src="js/jquery.js"></script>
+<script src="js/bootstrap.js"></script>
+<script src="js/moment.js"></script>
 <script src="js/underscore.js"></script>
 <script src="js/backbone.js"></script>
-<script src="js/bootstrap-datepicker.js"></script>
 <script src="js/main.js"></script>
 
-</body>	
-</html>		
+<!-- Calendar template
+<script type="text/template" id="calendar-template">
+    <a href="#/new" class="btn btn-primary">New event</a>
+    <hr />
+    <table class="table">
+        <thead>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Due date</th>
+            <th>Tags</th>
+            <th>Members</th>
+        </thead>
+        <tbody id="calendar-body">
+        </tbody>
+    </table>
+</script> -->
+
+</body>
+</html>
