@@ -1,5 +1,7 @@
+/*jslint browser: true*/
+/*global jQuery, Backbone, moment*/
 
-(function ($, _, Backbone) {
+(function ($, Underscore, Backbone, moment) {
     'use strict';
 
 	/**
@@ -11,8 +13,9 @@
 
             name: '',
             description: '',
-            dueDate: undefined,
+            due_date: undefined,
             tags: [],
+			// TODO: review comments
             // we could store tags in object instead of array
             // thus quickly determine whether event has or has not particular tag
             // but this is unnecessary optimisation:
@@ -21,16 +24,16 @@
             members: [],
             creationDate: new Date()
 
-        },
+        }
 
-        // TODO: we can somehow use it with save method
+		/*// TODO: we can somehow use it with save method
         validate: function (attribs) {
 
             if (!attribs.name) {
                 return 'Name is empty!';
             }
 
-            if (!attribs.dueDate) {
+            if (!attribs.due_date) {
                 return 'Due date is empty!';
             }
 
@@ -42,7 +45,7 @@
 
         initialize: function () {
 
-            /*this.on('error', function (model, error) {
+            this.on('error', function (model, error) {
                 //console.log(error);
             });
 
@@ -52,9 +55,9 @@
 
             this.on('change:description', function() {
                 console.log(this.get('name'), 'changed description to', this.get('description'));
-            });*/
+            });
 
-        }
+        }*/
 
     }),
 
@@ -63,7 +66,7 @@
         model: EventModel,
 
         comparator: function (eventModel) {
-            return eventModel.get('dueDate');
+            return eventModel.get('due_date');
         },
 
         // TODO: localStorage
@@ -76,51 +79,25 @@
 		 * @param year
 		 * @returns {array}
 		 */
-		getByDate: function(year, month, day) {
+		get_by_date: function(year, month, day) {
 
 			return this.filter(function (eventModel) {
 
-				var dueDate = eventModel.get('dueDate');
-				return dueDate.getFullYear() === year
-					&& dueDate.getMonth() === month
-					&& dueDate.getDate() === day;
+				var due_date = eventModel.get('due_date');
+				return due_date.getFullYear() === year
+					&& due_date.getMonth() === month
+					&& due_date.getDate() === day;
 
 			});
 
 		},
 
         /**
-         * Returns array containing past events.
-         * @return {Array}
-         */
-        getPast: function () {
-
-            var curDate = new Date();
-            return this.filter(function (eventModel) {
-                return eventModel.get('dueDate') <= curDate;
-            });
-
-        },
-
-        /**
-         * Returns array containing future events.
-         * @return {Array}
-         */
-        getFuture: function () {
-
-            var curDate = new Date();
-            return this.filter(function (eventModel) {
-                return eventModel.get('dueDate') > curDate;
-            });
-
-        },
-
-        /**
          * Returns array of events that have one of the given tags
          * @param tags array of tags
          * @return {Array} array of found events
          */
-        getByTags: function (tags) {
+        get_by_tags: function (tags) {
 
             return this.filter(function (eventModel) {
 
@@ -140,6 +117,32 @@
 
         }
 
+		/**
+		 * Returns array containing past events.
+		 * @return {Array}
+		 */
+		/*get_past: function () {
+
+			var curDate = new Date();
+			return this.filter(function (eventModel) {
+				return eventModel.get('due_date') <= curDate;
+			});
+
+		},*/
+
+		/**
+		 * Returns array containing future events.
+		 * @return {Array}
+		 */
+		/*get_future: function () {
+
+			var curDate = new Date();
+			return this.filter(function (eventModel) {
+				return eventModel.get('due_date') > curDate;
+			});
+
+		},*/
+
     }),
 
 	HeaderView = Backbone.View.extend({
@@ -158,7 +161,7 @@
 			this.$add_event_button.popover({
 				placement: 'bottom',
 				html: true,
-				content: _.template(add_event_template_html, {cur_date: cur_date_text})
+				content: Underscore.template(add_event_template_html, {cur_date: cur_date_text})
 			});
 
 		},
@@ -174,7 +177,7 @@
 			var name = this.$el.find('#add-event__name').val(),
 				date_text = this.$el.find('#add-event__date').val(),
 				date = moment(date_text, 'DD-MM-YYYY').toDate(),
-				event_model = new EventModel({name: name, dueDate: date});
+				event_model = new EventModel({name: name, due_date: date});
 
 			this.collection.add(event_model);
 			this.$add_event_button.popover('hide');
@@ -186,29 +189,88 @@
 
         tagName: 'div',
         className: 'calendar-cell-event',
-        template: _.template($('#cell-event-template').html()),
+        cell_template: Underscore.template(document.getElementById('cell-event-template').innerHTML),
+		popover_template: Underscore.template(document.getElementById('edit-event-template').innerHTML),
+
+		initialize: function() {
+
+			this.popover_visible = false;
+			this.listenTo(this.model, 'change', this.render);
+			this.listenTo(this.model, 'destroy', this.remove);
+
+		},
 
         render: function () {
 
-            // TODO: show members properly
-            var html = this.template({name: this.model.get('name'),
-				members: this.model.get('members')});
-            this.$el.html(html);
-            return this;
+            var model = this.model,
 
-        }
+				name_formatted = model ? model.escape('name') : '',
+				due_date = model ? model.get('due_date') : new Date(),
+				due_date_formatted = moment(due_date).format('DD-MM-YYYY'),
+				tags_formatted = model ? Underscore.escape(model.get('tags').join(', ')) : '',
+				members_formatted = model ? Underscore.escape(model.get('members').join(', ')) : '',
+				description_formatted = model ? model.escape('description') : '',
 
-		/*events: {
-		 'click .remove': 'destroyModel'
-		 },
+				cell_html = this.cell_template({
+					name: name_formatted,
+					members: members_formatted
+				}),
 
-		 initialize: function() {
-		 this.listenTo(this.model, 'destroy', this.remove);
-		 },
+				popover_html = this.popover_template({
+					name: name_formatted,
+					due_date: due_date_formatted,
+					tags: tags_formatted,
+					members: members_formatted,
+					description: description_formatted,
+					model: model
+				});
 
-		destroyModel: function () {
+            this.$el.html(cell_html);
+
+			// TODO: we can do it later or even in the separate view
+			this.$el.popover({
+				placement: 'right',
+				html: true,
+				content: popover_html,
+				container: this.$el,
+				trigger: 'manual'
+			});
+
+			return this;
+
+        },
+
+		events: {
+			'click .calendar-cell-event-wrapper': 'toggle_popover',
+			'submit': 'save_model',
+			//'click .save-event': 'save_model',
+			'click .remove-event': 'destroy_model'
+		},
+
+		toggle_popover: function() {
+			this.popover_visible ? this.$el.popover('hide') : this.$el.popover('show');
+			this.popover_visible = !this.popover_visible;
+		},
+
+		save_model: function (event) {
+
+			/*var eventDetails = {
+				name: this.el.getE
+			};
+			if (!this.model) {
+				this.model = new EventModel(eventDetails);
+				this.collection.add(this.model);
+			} else {
+				this.model.set(eventDetails);
+			}*/
+			return false;
+
+		},
+
+		destroy_model: function () {
             this.model.destroy();
-        }*/
+			return false;
+        }
 
     }),
 
@@ -235,7 +297,6 @@
 		},
 
         render: function () {
-			/*jslint browser:true */
 			// TODO: maybe some template?
 
 			var cur_date = new Date(),
@@ -262,7 +323,8 @@
 					}
 					cell.appendChild(cell_header);
 
-					event_models = this.collection.getByDate(
+					// TODO: ineffective
+					event_models = this.collection.get_by_date(
 						date_counter.getFullYear(),
 						date_counter.getMonth(),
 						date_counter.getDate());
@@ -342,7 +404,7 @@
     eventModel1 = new EventModel({
         name: 'Первая лекция',
         description: 'Первая лекция по js',
-        dueDate: new Date(2013, 2, 16, 17),
+        due_date: new Date(2013, 2, 16, 17),
         tags: ['лекция', 'java script', 'hh']
     }),
 
@@ -350,7 +412,7 @@
     eventModel2 = new EventModel({
         name: 'Вторая лекция',
         description: 'Вторая лекция по js',
-        dueDate: new Date(2013, 2, 18, 17),
+        due_date: new Date(2013, 2, 18, 17),
         tags: ['лекция', 'java script', 'hh', 'important'],
         members: ['Anton Ivanov', 'Vitaly Glibin']
     }),
@@ -402,7 +464,7 @@
 	 (new CalendarView({collection: calendarCollection})).render();
 	 }
 
-	 /*editEvent: function (cid) {
+	 editEvent: function (cid) {
 	 var eventModel = calendarCollection.get(cid);
 	 // TODO: how long does this object live?
 	 (new EditEventView({model: eventModel, collection: calendarCollection})).render();
@@ -414,5 +476,5 @@
 
 	Backbone.history.start(); */
 
-}) (jQuery, _, Backbone);
+}) (jQuery, _, Backbone, moment);
 

@@ -10,8 +10,6 @@
 
 <div class="header" id="header">
 
-
-
 </div>
 
 <div class="calendar">
@@ -23,7 +21,6 @@
     </div>
 
     <table id="calendar-table" class="calendar-table">
-
 
     </table>
 
@@ -48,49 +45,42 @@
 <!-- Add event template -->
 <script type="text/template" id="add-event-template">
 
-    <label>Name
-        <input id="add-event__name" type="text" autofocus="true">
-    </label>
-    <label>Date
-        <!-- TODO: date and time -->
-        <input id="add-event__date" type="text" value="<%= cur_date %>">
-    </label>
+    <input id="add-event__name" type="text" name="name" autofocus="true" placeholder="Имя события">
+    <!-- TODO: date and time -->
+    <input id="add-event__date" type="text" value="<%= cur_date %>">
     <!-- TODO: Enter does not work -->
     <button id="add-event__create">Создать</button>
 
 </script>
 
-<!-- Event template -->
+<!-- Cell event template -->
 <script type="text/template" id="cell-event-template">
-    <div class="calendar-cell-event__name"><%= name %></div>
-    <div class="calendar-cell-event__members"><%= members %></div>
+
+    <div class="calendar-cell-event-wrapper">
+        <div class="calendar-cell-event__name"><%= name %></div>
+        <!-- TODO: show members properly -->
+        <div class="calendar-cell-event__members"><%= members %></div>
+    </div>
+
 </script>
 
 <!-- Edit event template -->
 <script type="text/template" id="edit-event-template">
     <form class="edit-event-form">
-        <legend ><%= eventModel ? 'Update' : 'Create' %> event</legend>
 
-        <label>Name</label>
-        <input type="text" name="name" value="<%= eventModel ? eventModel.get('name') : '' %>"/>
+        <input type="text" name="name" placeholder="Событие" value="<%= name %>"/>
 
-        <label>Description</label>
-        <input type="text" name="description" value="<%= eventModel ? eventModel.get('description') : '' %>">
+        <input type="text" name="due_date" value="<%= due_date %>">
 
-        <label>Due date</label>
-        <input class="datepicker" type="datetime" name="dueDate" value="<%= eventModel ? eventModel.get('dueDate') : '' %>">
+        <input type="text" name="tags" placeholder="Теги" value="<%= tags %>">
 
-        <label>Tags</label>
-        <input type="text" name="tags" value="<%= eventModel ? eventModel.get('tags') : '' %>">
+        <input type="text" name="members" placeholder="Имена участников" value="<%= members %>">
 
-        <label>Members</label>
-        <input type="text" name="members" value="<%= eventModel ? eventModel.get('members') : '' %>">
+        <input type="text" name="description" placeholder="Описание" value="<%= description %>">
 
-        <hr />
-        <button type="submit" class="btn-primary"><%= eventModel ? 'Update' : 'Create' %> event</button>
-        <% if(eventModel) { %>
-            <input type="hidden" name="cid" value="<%= eventModel.cid %>" />
-            <button class="btn btn-danger delete">Delete</button>
+        <button class="save-event" type="submit">Готово</button>
+        <% if(model) { %>
+            <button class="remove-event">Удалить</button>
         <% }; %>
 
     </form>
