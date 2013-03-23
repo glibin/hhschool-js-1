@@ -12,19 +12,6 @@
 В итоге я остановился на свойстве класса Event._lastId, а не на Event.prototype._lastId,
 и получаю к нему доступ через Event._lastId, а не this._lastId.
 Так как же в итоге правильно? Как обычно делают?
-
-2) Нужно ли добавлять комментарии ко всем геттерам и сеттерам?
-
-3) Этот вопрос касается не только JavaScript, но вообще в целом разработку с ООП.
-В объекте Event есть поле Date. И его можно менять.
-Но при его смене могут нарушиться инварианты в объекте, котоырй этот Event хранит (в данном случае
-это EventManager, где объекты упорядочены в массиве по как раз этой дате.
-В итоге не ясно, как же дизайнить эти объекты, чтобы изменения в объекте не ломали код в другом месте.
-Использовать приватные методы для изменения даты, которые тайно будет использовать EventManager (таким
-образом тесно связав эти объекты)?
-Или делать какой-то callback в Event, который при изменении даты будет звонить тому, кто на изменения
-этого поля рарегистрировался? Но не будет ли это слишком сложно?
-Как обычно это решают?
  */
 
 // ### Implementing Set ###
@@ -128,6 +115,7 @@ function Event(name) {
     this._creationDate = new Date();
     this._tags = new Set();
     this._people = {};
+    this._onDateChangelisteners = [];
 }
 
 Event._lastId = -1; // The maximum ID of current events
@@ -141,7 +129,15 @@ Event.prototype.setName = createSetter('_name');
 Event.prototype.getCreationDate = createGetter('_creationDate');
 
 Event.prototype.getEventDate = createGetter('_eventDate');
-Event.prototype.setEventDate = createSetter('_eventDate');
+Event.prototype.setEventDate = function (eventDate) {
+    "use strict";
+    var i;
+    this._eventDate = eventDate;
+    for (i = 0; i < this._onDateChangelisteners.length; i++) {
+        this._onDateChangelisteners[i](this);
+    }
+    return this;
+};
 
 Event.prototype.getDescription = createGetter('_description');
 Event.prototype.setDescription = createSetter('_description');
@@ -227,6 +223,12 @@ Event.prototype.updateIdCounter = function () {
 };
 
 
+Event.prototype.addDateChangeListener = function (listener) {
+    "use strict";
+    this._onDateChangelisteners.push(listener);
+}
+
+
 
 // ### Person ###
 // #####################################################################################################
@@ -276,9 +278,18 @@ function EventManager() {
  */
 EventManager.prototype.addEvent = function (event) {
     "use strict";
+    event.addDateChangeListener(this.eventDateChangeListener.bind(this))
     this._events.push(event);
     this._events.sort(Event.compareEventsByDueDate);
 };
+
+/**
+ * This is a callback function triggered on event date change.
+ * @param event
+ */
+EventManager.prototype.eventDateChangeListener = function(event) {
+    this._events.sort(Event.compareEventsByDueDate);
+}
 
 /**
  * Remove event by Id
@@ -480,11 +491,9 @@ console.log("Turning passed meeting into its sequel.");
 ev = eventManager.getPreviousEvents()[0];
 ev.setDescription("Sheer waste of time");
 ev.setName("Second part of the meeting");
-eventManager.removeEvent(ev.getId());
 date = ev.getEventDate();
 date = date.setDate(date.getDate() + 20);
 ev.setEventDate(date);
-eventManager.addEvent(ev);
 console.log("Previous events:");
 console.log(eventManager.getPreviousEvents());
 console.log("Future events:");
