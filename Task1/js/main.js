@@ -1,5 +1,5 @@
 /**
- * Simple even calendar
+ * Simple event calendar
  */
 
 /*
@@ -115,7 +115,7 @@ function Event(name) {
     this._creationDate = new Date();
     this._tags = new Set();
     this._people = {};
-    this._onDateChangelisteners = [];
+    this._onDateChangeListeners = [];
 }
 
 Event._lastId = -1; // The maximum ID of current events
@@ -133,8 +133,8 @@ Event.prototype.setEventDate = function (eventDate) {
     "use strict";
     var i;
     this._eventDate = eventDate;
-    for (i = 0; i < this._onDateChangelisteners.length; i++) {
-        this._onDateChangelisteners[i](this);
+    for (i = 0; i < this._onDateChangeListeners.length; i++) {
+        this._onDateChangeListeners[i](this);
     }
     return this;
 };
@@ -225,7 +225,7 @@ Event.prototype.updateIdCounter = function () {
 
 Event.prototype.addDateChangeListener = function (listener) {
     "use strict";
-    this._onDateChangelisteners.push(listener);
+    this._onDateChangeListeners.push(listener);
 }
 
 
@@ -269,7 +269,7 @@ Person.prototype.toString = function () {
  */
 function EventManager() {
     "use strict";
-    this._events = []; // sorted by date (in fact, it should be ordered set, but this data structure is difficult to implement)
+    this._eventsByDate = []; // sorted by date (in fact, it should be ordered set, but this data structure is difficult to implement)
 }
 
 /**
@@ -279,8 +279,8 @@ function EventManager() {
 EventManager.prototype.addEvent = function (event) {
     "use strict";
     event.addDateChangeListener(this.eventDateChangeListener.bind(this))
-    this._events.push(event);
-    this._events.sort(Event.compareEventsByDueDate);
+    this._eventsByDate.push(event);
+    this._eventsByDate.sort(Event.compareEventsByDueDate);
 };
 
 /**
@@ -288,7 +288,7 @@ EventManager.prototype.addEvent = function (event) {
  * @param event
  */
 EventManager.prototype.eventDateChangeListener = function(event) {
-    this._events.sort(Event.compareEventsByDueDate);
+    this._eventsByDate.sort(Event.compareEventsByDueDate);
 }
 
 /**
@@ -300,12 +300,12 @@ EventManager.prototype.removeEvent = function (eventId) {
     "use strict";
     var i,
         new_events = [];
-    for (i = 0; i < this._events.length; i++) {
-        if (this._events[i].getId() !== eventId) {
-            new_events.push(this._events[i]);
+    for (i = 0; i < this._eventsByDate.length; i++) {
+        if (this._eventsByDate[i].getId() !== eventId) {
+            new_events.push(this._eventsByDate[i]);
         }
     }
-    this._events = new_events;
+    this._eventsByDate = new_events;
     return this;
 };
 
@@ -318,8 +318,8 @@ EventManager.prototype.getEventById = function (eventId) {
     "use strict";
     var i,
         event;
-    for (i = 0; i < this._events.length; i++) {
-        event = this._events[i];
+    for (i = 0; i < this._eventsByDate.length; i++) {
+        event = this._eventsByDate[i];
         if (event.getId() === eventId) {
             return event;
         }
@@ -337,8 +337,8 @@ EventManager.prototype.getEventsFilteredByTag = function () {
         tag,
         event,
         matching_all_tags;
-    for (i = 0; i < this._events.length; i++) {
-        event = this._events[i];
+    for (i = 0; i < this._eventsByDate.length; i++) {
+        event = this._eventsByDate[i];
         matching_all_tags = true;
         for (j = 0; j < arguments.length; j++) {
             tag = arguments[j];
@@ -365,8 +365,8 @@ EventManager.prototype.getPreviousEvents = function () {
         event,
         previous_events = [],
         now = new Date();
-    for (i = 0; i < this._events.length; i++) {
-        event = this._events[i];
+    for (i = 0; i < this._eventsByDate.length; i++) {
+        event = this._eventsByDate[i];
         if (event.getEventDate() < now) {
             previous_events.push(event);
         } else {
@@ -386,8 +386,8 @@ EventManager.prototype.getFutureEvents = function () {
         event,
         future_events = [],
         now = new Date();
-    for (i = 0; i < this._events.length; i++) {
-        event = this._events[i];
+    for (i = 0; i < this._eventsByDate.length; i++) {
+        event = this._eventsByDate[i];
         if (event.getEventDate() > now) { // better yet to use binary search, but this is too complicated
             future_events.push(event);
         }
