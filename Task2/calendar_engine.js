@@ -105,14 +105,18 @@ function Event(properties) {
     this._id = Event._generateId();
     this._creationDate = new Date();
 
+    this._createListeners();
+
+    this.updateProperties(properties);
+    log("[Event] Created Event with id " + this._id);
+}
+
+Event.prototype._createListeners = function () {
     this._onTitleChangeListeners = [];
     this._onDateChangeListeners = [];
     this._onPersonsChangeListeners = [];
     this._onDescriptionChangeListeners = [];
     this._onDeleteListeners = [];
-
-    this.updateProperties(properties);
-    log("[Event] Created Event with id " + this._id);
 }
 
 Event.propertySet = new Set(['id', 'creationDate', 'title', 'eventDate', 'persons', 'description']);
@@ -260,6 +264,7 @@ Event.prototype.toJSON = function () {
         attribute,
         i,
         replacer = {};
+    log("[Event] Converting event " + this._id + " to JSON");
     for (i = 0; i < properties.length; i++) {
         attribute = '_' + properties[i];
         replacer[attribute] = this[attribute];
@@ -269,13 +274,16 @@ Event.prototype.toJSON = function () {
 };
 
 Event.fromJSON = function (data) {
-    var event = new Event({'eventDate': new Date()}),
+    var event,
         i;
+    event = Object.create(Event.prototype); // creating virgin event
+    event._createListeners();
     for (key in data) {
         if (!data.hasOwnProperty(key)) continue;
         event[key] = data[key];
     }
     event._eventDate = new Date(data._eventDate);
+    log("[Event] Event " + event._id + " loaded from JSON");
     return event;
 };
 
@@ -396,6 +404,7 @@ EventManager.prototype.toJSON = function () {
     var event,
         eventID,
         replacer = [];
+    log("[EM] Generating JSON for EventManager");
     for (eventID in this._eventsById) {
         event = this._eventsById[eventID];
         replacer.push(event);
@@ -404,6 +413,7 @@ EventManager.prototype.toJSON = function () {
 };
 
 EventManager.fromJSON = function (data) {
+    log("[EM] Reading EventManager from JSON");
     var unparsed = JSON.parse(data),
         i,
         event,
@@ -422,6 +432,7 @@ EventManager.fromJSON = function (data) {
  */
 EventManager.prototype.dump = function () {
     "use strict";
+    log("[EM] Dumping EventManager to JSON");
     return JSON.stringify(this, null, 4);
 };
 
