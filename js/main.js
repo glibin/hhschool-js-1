@@ -1,237 +1,230 @@
 /*jslint browser: true*/
-/*global jQuery, Backbone, moment*/
+/*global jQuery, Backbone, _, moment, alert*/
 
 (function ($, Underscore, Backbone, moment) {
     'use strict';
 
-	/**
-     * Calendar event model
-     */
     var EventModel = Backbone.Model.extend({
 
         defaults: {
 
             name: '',
             description: '',
-            due_date: undefined,
+            dueDate: undefined,
             tags: [],
-			// TODO: review comments
-            // we could store tags in object instead of array
-            // thus quickly determine whether event has or has not particular tag
-            // but this is unnecessary optimisation:
-            // we are not expect event to have many
-
             members: [],
             creationDate: new Date()
 
-        }
+        },
 
-		/*// TODO: we can somehow use it with save method
-        validate: function (attribs) {
+        initialize: function () {
 
-            if (!attribs.name) {
+            this.on('change', function() {
+                this.save();
+            });
+
+            // TODO: this is better be on view side
+            this.on('invalid', function (model, error) {
+                alert(error);
+             });
+
+        },
+
+        parse: function(data) {
+
+            // in JSON dates comes as text, we need to convert them
+            data.dueDate = new Date(data.dueDate);
+            data.creationDate = new Date(data.creationDate);
+            return data;
+
+        },
+
+        /**Earliest date that makes sense as due date of a model.
+         * Prevents user to specify wrong date.*/
+        earliestDueDate: new Date(1990, 0, 1),
+
+        /**Latest date that makes sense as due date of a model.
+         * Prevents user to specify wrong date.*/
+        latestDueDate: new Date(new Date().getFullYear()+10, 0, 1),
+
+        validate: function (attributes) {
+
+            if (!attributes.name.trim()) {
                 return 'Name is empty!';
             }
 
-            if (!attribs.due_date) {
+            if (!attributes.dueDate) {
                 return 'Due date is empty!';
+            }
+
+            if (attributes.dueDate < this.earliestDueDate || attributes.dueDate > this.latestDueDate) {
+                return 'Due date seems to be too far away from now!';
             }
 
             return undefined;
 
         },
 
-        urlRoot: '/events',
+        /**Returns true or false whether a model suits query string or not.
+         * @param query query string
+         * @returns boolean*/
+        suitsQuery: function(query) {
 
-        initialize: function () {
+            var containsQuery = function(str) {
+                    return str.indexOf(query) !== -1;
+                };
 
-            this.on('error', function (model, error) {
-                //console.log(error);
-            });
+            if (this.get('name').indexOf(query) !== -1) {
+                return true;
+            }
 
-            this.on('change:name', function() {
-                console.log(this.get('name'), 'changed name to', this.get('name'));
-            });
+            if (this.get('description').indexOf(query) !== -1) {
+                return true;
+            }
 
-            this.on('change:description', function() {
-                console.log(this.get('name'), 'changed description to', this.get('description'));
-            });
+            // TODO: dueDate
 
-        }*/
+            if (this.get('tags').some(containsQuery)) {
+                return true;
+            }
+
+            if (this.get('members').some(containsQuery)) {
+                return true;
+            }
+
+            return false;
+
+        }
 
     }),
 
-    CalendarCollection = Backbone.Collection.extend({
+    EventsCollection = Backbone.Collection.extend({
 
+        localStorage: new Backbone.LocalStorage('calendar'),
         model: EventModel,
+        url: '/calendar',
 
         comparator: function (eventModel) {
-            return eventModel.get('due_date');
+            return eventModel.get('dueDate');
         },
 
-        // TODO: localStorage
-        //localStorage: new Backbone.LocalStorage('calendar-backbone'),
+        initialize: function () {
+                // keep collection sorted even if dueDate of a model changes
+            this.on('change:dueDate', this.sort);
+        },
 
-		/**
-		 * Returns array containing events that happen in the given day
-		 * @param month
-		 * @param day
-		 * @param year
-		 * @returns {array}
-		 */
-		get_by_date: function(year, month, day) {
+        /**Returns array containing events that happen in the given day.
+         * @param year
+         * @param month
+         * @param day
+         * @returns {Array}*/
+        getByDate: function(year, month, day) {
 
 			return this.filter(function (eventModel) {
 
-				var due_date = eventModel.get('due_date');
-				return due_date.getFullYear() === year
-					&& due_date.getMonth() === month
-					&& due_date.getDate() === day;
+				var dueDate = eventModel.get('dueDate');
+				return dueDate.getFullYear() === year
+					&& dueDate.getMonth() === month
+					&& dueDate.getDate() === day;
 
 			});
 
 		},
 
-        /**
-         * Returns array of events that have one of the given tags
-         * @param tags array of tags
-         * @return {Array} array of found events
-         */
-        get_by_tags: function (tags) {
+        /**Returns array of events that suit query string
+         * @param query query string
+         * @return {Array}*/
+        search: function (query) {
 
             return this.filter(function (eventModel) {
-
-                var j,
-                    eventModelTags = eventModel.get('tags');
-                for (j = 0; j < tags.length; j += 1) {
-
-                    if (eventModelTags.indexOf(tags[j]) !== -1) {
-                        return true;
-                    }
-
-                }
-
-                return false;
-
+               return eventModel.suitsQuery(query);
             });
 
         }
 
-		/**
-		 * Returns array containing past events.
-		 * @return {Array}
-		 */
-		/*get_past: function () {
-
-			var curDate = new Date();
-			return this.filter(function (eventModel) {
-				return eventModel.get('due_date') <= curDate;
-			});
-
-		},*/
-
-		/**
-		 * Returns array containing future events.
-		 * @return {Array}
-		 */
-		/*get_future: function () {
-
-			var curDate = new Date();
-			return this.filter(function (eventModel) {
-				return eventModel.get('due_date') > curDate;
-			});
-
-		},*/
-
     }),
 
-	HeaderView = Backbone.View.extend({
+    /**Predefined collection of calendar events*/
+    calendarCollection = new EventsCollection(),
 
-		el: '#header',
+    /**Returns array where each element is trimmed.
+     * @param array original array of strings
+     * @return {Array}*/
+    trimArray = function(array) {
+        var trimmedArray = [],
+            i, arrayLength = array.length;
+        for (i=0; i<arrayLength; i+=1) {
+            trimmedArray.push(array[i].trim());
+        }
+        return trimmedArray;
+    },
 
-		render: function () {
+    /**Returns given form as javascript object.
+     * @param form DOM element
+     * @return {object}*/
+    formToObject = function (form) {
 
-			var html = $('#header-template').html(),
-				add_event_template_html = $('#add-event-template').html(),
-				cur_date_text = moment().format('DD-MM-YYYY');
+        var fieldsArray = $(form).serializeArray(),
+            i, fieldsArrayLength = fieldsArray.length,
+            formObject = {};
 
-			this.$el.html(html);
+        for (i=0; i<fieldsArrayLength; i+=1) {
+            formObject[fieldsArray[i].name] = fieldsArray[i].value;
+        }
 
-			this.$add_event_button = this.$el.find('#add-event');
-			this.$add_event_button.popover({
-				placement: 'bottom',
-				html: true,
-				content: Underscore.template(add_event_template_html, {cur_date: cur_date_text})
-			});
+        return formObject;
 
-		},
+    },
 
-		events: {
-			'click #add-event__create': 'create_event'
-		},
+    /**Predefined format of due date*/
+    dueDateFormat = 'DD MMMM, HH:mm',
 
-		create_event: function () {
-
-			// TODO: validation
-
-			var name = this.$el.find('#add-event__name').val(),
-				date_text = this.$el.find('#add-event__date').val(),
-				date = moment(date_text, 'DD-MM-YYYY').toDate(),
-				event_model = new EventModel({name: name, due_date: date});
-
-			this.collection.add(event_model);
-			this.$add_event_button.popover('hide');
-		}
-
-	}),
-
-    CellEventView = Backbone.View.extend({
+    /**Backbone view of existing calendar event model*/
+    CellExistingEventView = Backbone.View.extend({
 
         tagName: 'div',
-        className: 'calendar-cell-event',
-        cell_template: Underscore.template(document.getElementById('cell-event-template').innerHTML),
-		popover_template: Underscore.template(document.getElementById('edit-event-template').innerHTML),
+        className: 'cell-event',
+        cellTemplate: Underscore.template(document.getElementById('cell-existing-event-template').innerHTML),
+		popoverTemplate: Underscore.template(document.getElementById('edit-event-template').innerHTML),
 
 		initialize: function() {
 
-			this.popover_visible = false;
-			this.listenTo(this.model, 'change', this.render);
-			this.listenTo(this.model, 'destroy', this.remove);
+            this.listenTo(this.model, 'change', this.render);
+            this.listenTo(this.model, 'destroy', this.remove);
 
 		},
 
         render: function () {
 
             var model = this.model,
+				nameFormatted = model.escape('name'),
+				dueDate = model.get('dueDate'),
+				dueDateFormatted = moment(dueDate).format(dueDateFormat),
+				tagsFormatted = Underscore.escape(model.get('tags').join(', ')),
+				membersFormatted = Underscore.escape(model.get('members').join(', ')),
+				descriptionFormatted = model.escape('description'),
 
-				name_formatted = model ? model.escape('name') : '',
-				due_date = model ? model.get('due_date') : new Date(),
-				due_date_formatted = moment(due_date).format('DD-MM-YYYY'),
-				tags_formatted = model ? Underscore.escape(model.get('tags').join(', ')) : '',
-				members_formatted = model ? Underscore.escape(model.get('members').join(', ')) : '',
-				description_formatted = model ? model.escape('description') : '',
-
-				cell_html = this.cell_template({
-					name: name_formatted,
-					members: members_formatted
+				cellHtml = this.cellTemplate({
+					name: nameFormatted,
+					members: membersFormatted
 				}),
 
-				popover_html = this.popover_template({
-					name: name_formatted,
-					due_date: due_date_formatted,
-					tags: tags_formatted,
-					members: members_formatted,
-					description: description_formatted,
+				popoverHtml = this.popoverTemplate({
+					name: nameFormatted,
+					dueDate: dueDateFormatted,
+					tags: tagsFormatted,
+					members: membersFormatted,
+					description: descriptionFormatted,
 					model: model
 				});
 
-            this.$el.html(cell_html);
+            this.$el.html(cellHtml);
 
-			// TODO: we can do it later or even in the separate view
+            this.$el.popover('destroy');
 			this.$el.popover({
 				placement: 'right',
 				html: true,
-				content: popover_html,
+				content: popoverHtml,
 				container: this.$el,
 				trigger: 'manual'
 			});
@@ -240,241 +233,373 @@
 
         },
 
-		events: {
-			'click .calendar-cell-event-wrapper': 'toggle_popover',
-			'submit': 'save_model',
-			//'click .save-event': 'save_model',
-			'click .remove-event': 'destroy_model'
+        events: {
+            'click .cell-event-wrapper': 'togglePopover',
+            'submit': 'saveModel',
+            'click .remove-event': 'destroyModel'
+        },
+
+		togglePopover: function() {
+            this.$el.popover('toggle');
 		},
 
-		toggle_popover: function() {
-			this.popover_visible ? this.$el.popover('hide') : this.$el.popover('show');
-			this.popover_visible = !this.popover_visible;
-		},
+		saveModel: function (event) {
 
-		save_model: function (event) {
+            var form = event.target,
+                formObject = formToObject(form),
+                tempModel;
 
-			/*var eventDetails = {
-				name: this.el.getE
-			};
-			if (!this.model) {
-				this.model = new EventModel(eventDetails);
-				this.collection.add(this.model);
-			} else {
-				this.model.set(eventDetails);
-			}*/
+            formObject.dueDate = moment(formObject.dueDate, dueDateFormat).toDate();
+            formObject.dueDate.setFullYear(this.model.get('dueDate').getFullYear());
+            formObject.tags = trimArray(formObject.tags.split(','));
+            formObject.members = trimArray(formObject.members.split(','));
+
+            tempModel = this.model.set(formObject, {validate: true});
+            if (tempModel) {
+                this.$el.popover('hide');
+            }
+
 			return false;
 
 		},
 
-		destroy_model: function () {
+		destroyModel: function () {
             this.model.destroy();
 			return false;
         }
 
     }),
 
-	// TODO: docstring
-	date_of_last_monday = function(date) {
+    /**Backbone view of new event*/
+    CellNewEventView = Backbone.View.extend({
 
-		var day = date.getDate();
-		if (day === 0) {
-			day = 7;
-		}
-		day -= 1;
-		return new Date(date - day*24*60*60*1000);
+        tagName: 'div',
+        className: 'cell-new-event',
+        cellTemplate: Underscore.template(document.getElementById('cell-new-event-template').innerHTML),
+        popoverTemplate: Underscore.template(document.getElementById('edit-event-template').innerHTML),
 
-	},
+        initialize: function() {
 
-	names_of_days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'],
-
-    CalendarView = Backbone.View.extend({
-
-        el: '#calendar-table',
-
-		initialize: function() {
-			this.listenTo(this.collection, 'add', this.render);
-		},
-
-        render: function () {
-			// TODO: maybe some template?
-
-			var cur_date = new Date(),
-				date_counter = date_of_last_monday(cur_date),
-				week_index, day_index, event_models,
-				row, cell, cell_header;
-
-			this.$el.empty();
-			for (week_index=0; week_index < 5; week_index+=1) {
-
-				row = document.createElement('tr');
-				row.className = 'calendar-table-row';
-
-				for (day_index=0; day_index < 7; day_index+=1) {
-
-					cell = document.createElement('td');
-					cell.className = 'calendar-cell';
-
-					cell_header = document.createElement('div');
-					cell_header.className = 'calendar-cell__header';
-					cell_header.innerHTML = date_counter.getDate().toString();
-					if (week_index === 0) {
-						cell_header.innerHTML = names_of_days[day_index] + ', ' + cell_header.innerHTML;
-					}
-					cell.appendChild(cell_header);
-
-					// TODO: ineffective
-					event_models = this.collection.get_by_date(
-						date_counter.getFullYear(),
-						date_counter.getMonth(),
-						date_counter.getDate());
-					if (event_models.length > 0) {
-
-						cell.classList.add('calendar-cell-with-events');
-
-						event_models.forEach(function(event_model) {
-
-							var event_view = new CellEventView({model: event_model});
-							cell.appendChild(event_view.render().el);
-
-						});
-
-					}
-
-					row.appendChild(cell);
-
-					date_counter.setDate(date_counter.getDate()+1);
-
-				}
-
-				this.$el.append(row);
-
-			}
-
-            return this;
-
-        }
-
-    }),
-
-    /*EditEventView = Backbone.View.extend({
-
-        el: '#page',
-
-        template: _.template($('#edit-event-template').html()),
+        },
 
         render: function () {
 
-            // TODO: due date is not date!
-            this.$el.html(this.template({eventModel: this.model}));
-			$('.datepicker').datepicker({format: 'dd-mm-yyyy'});
+            var dueDate = this.options.cellDate,
+                dueDateFormatted = moment(dueDate).hours(12).format(dueDateFormat),
+
+                cellHtml = this.cellTemplate(),
+
+                popoverHtml = this.popoverTemplate({
+                    name: '',
+                    dueDate: dueDateFormatted,
+                    tags: '',
+                    members: '',
+                    description: '',
+                    model: null
+                });
+
+            this.$el.html(cellHtml);
+
+            this.$el.popover('destroy');
+            this.$el.popover({
+                placement: 'right',
+                html: true,
+                content: popoverHtml,
+                container: this.$el,
+                trigger: 'manual'
+            });
+
             return this;
 
         },
 
         events: {
-            'submit .edit-event-form': 'saveEvent',
-            'click .delete': 'deleteEvent'
+            'click .cell-new-event-wrapper': 'togglePopover',
+            'submit': 'saveModel'
         },
 
-        saveEvent: function (event) {
+        togglePopover: function() {
+            this.$el.popover('toggle');
+        },
 
-            var eventDetails = $(event.currentTarget).serializeObject();
-            if (!this.model) {
-                this.model = new EventModel(eventDetails);
-                this.collection.add(this.model);
-            } else {
-                this.model.set(eventDetails);
+        saveModel: function (event) {
+
+            var form = event.target,
+                formObject = formToObject(form),
+                tempModel;
+
+            formObject.dueDate = moment(formObject.dueDate, dueDateFormat).toDate();
+            formObject.dueDate.setFullYear(this.options.cellDate.getFullYear());
+            formObject.tags = trimArray(formObject.tags.split(','));
+            formObject.members = trimArray(formObject.members.split(','));
+
+            tempModel = new EventModel(formObject);
+            if (tempModel.isValid()) {
+                calendarCollection.create(tempModel);
             }
-            router.navigate('', {trigger: true});
-            return false;
 
-        },
-
-        deleteEvent: function (event) {
-            this.model.collection.remove(this.model);
-            router.navigate('', {trigger: true});
             return false;
 
         }
 
-    }),*/
-
-    // predefined event 1 for demonstration
-    eventModel1 = new EventModel({
-        name: 'Первая лекция',
-        description: 'Первая лекция по js',
-        due_date: new Date(2013, 2, 16, 17),
-        tags: ['лекция', 'java script', 'hh']
     }),
 
-    // predefined event 2 for demonstration
-    eventModel2 = new EventModel({
-        name: 'Вторая лекция',
-        description: 'Вторая лекция по js',
-        due_date: new Date(2013, 2, 18, 17),
-        tags: ['лекция', 'java script', 'hh', 'important'],
-        members: ['Anton Ivanov', 'Vitaly Glibin']
-    }),
+    /**Backbone view of cell - day of calendar*/
+    CellView = Backbone.View.extend({
 
-    // predefined calendar
-    calendarCollection = new CalendarCollection([eventModel1, eventModel2]);
+        tagName: 'td',
+        className: 'cell',
+        template: Underscore.template(document.getElementById('cell-template').innerHTML),
 
-    $.fn.serializeObject = function () {
-        var o = {},
-            a = this.serializeArray();
-        $.each(a, function() {
-            if (o[this.name] !== undefined) {
-                if (!o[this.name].push) {
-                    o[this.name] = [o[this.name]];
-                }
-                o[this.name].push(this.value || '');
-            } else {
-                o[this.name] = this.value || '';
+        initialize: function() {
+            this.listenTo(this.collection, 'remove', this.render);
+        },
+
+        render: function () {
+
+            var el = this.el,
+                headText,
+                cellExistingEventView,
+                cellNewEventView;
+
+            headText = this.options.cellDate.getDate().toString();
+            if (this.options.dayName) {
+                headText = this.options.dayName + ', ' + headText;
             }
-        });
-        return o;
-    };
 
-	new HeaderView({collection: calendarCollection}).render();
+            el.innerHTML = this.template({
+                head: headText
+            });
+
+            el.classList.remove('cell-with-events');
+
+            if (this.collection.length > 0) {
+
+                el.classList.add('cell-with-events');
+
+                this.collection.forEach(function(eventModel) {
+
+                    cellExistingEventView = new CellExistingEventView({model: eventModel});
+                    el.appendChild(cellExistingEventView.render().el);
+
+                });
+
+            }
+
+            cellNewEventView = new CellNewEventView({cellDate: this.options.cellDate});
+            el.appendChild(cellNewEventView.render().el);
+
+            return this;
+
+        }
+
+    }),
+
+    /**Returns date of last monday occurred before given date.
+     * @param date
+     * @return {Date}*/
+    // tried to make moment.js to treat monday as the beginning of the week, but got errors :-(
+    dateOfLastMonday = function(date) {
+
+		var day = date.getDay();
+        // We need to treat Monday as the beginning of the week, not Sunday
+		if (day === 0) {
+			day = 7;
+		}
+		day -= 1;
+		return new Date(date.getTime() - day*24*60*60*1000);
+
+	},
+
+    SearchView = Backbone.View.extend({
+
+        el: '.search',
+        template: Underscore.template(document.getElementById('search-template').innerHTML),
+        eventTemplate: Underscore.template(document.getElementById('search-event-template').innerHTML),
+
+        render: function () {
+
+            this.el.innerHTML = this.template();
+
+        },
+
+        events: {
+            'keyup .search__input': 'search'
+        },
+
+        search: function(event) {
+
+            var query = event.target.value,
+                eventModels = this.collection.search(query),
+                eventModelsLength = eventModels.length,
+                i,
+                html = '';
+
+            for (i=0; i < eventModelsLength; i += 1) {
+                html += this.eventTemplate({
+                    name: eventModels[i].get('name'),
+                    dueDate: moment(eventModels[i].get('dueDate')).format('DD MMMM')
+                });
+            }
+
+            // TODO: make selectable dropdown instead of popover
+            this.$el.popover('destroy');
+            this.$el.popover({
+                placement: 'bottom',
+                html: true,
+                content: html
+            });
+            this.$el.popover('show');
+
+            //this.$el.find(".dropdown-toggle").dropdown('toggle');
+
+        }
+
+    }),
+
+    // tried to make moment.js to use russian, but got errors :-(
+	namesOfDays = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'],
+
+    CalendarView = Backbone.View.extend({
+
+        el: '.calendar',
+        template: Underscore.template(document.getElementById('calendar-template').innerHTML),
+        quickAddEventTemplate: Underscore.template(document.getElementById('quick-add-event-template').innerHTML),
+
+		initialize: function() {
+
+            this.listenTo(this.collection, 'add', this.render);
+            this.listenTo(this.collection, 'sort', this.render);
+            this.curMonth = moment().startOf('month').toDate();
+
+		},
+
+        render: function () {
+
+			var dateCounter = dateOfLastMonday(this.curMonth),
+                calendarTableElement,
+				weekIndex, dayIndex,
+				row, cellView, cellCollection, cellEventModels;
+
+            this.el.innerHTML = this.template({
+                monthYear: moment(this.curMonth).format('MMMM YYYY')
+            });
+
+            this.$quickAddEventButton = this.$el.find('.quick-add-event');
+            this.$quickAddEventButton.popover({
+                placement: 'bottom',
+                html: true,
+                content: this.quickAddEventTemplate({
+                    curDate: moment().format(dueDateFormat)
+                })
+            });
+
+            new SearchView({collection: this.collection}).render();
+
+            calendarTableElement = this.el.getElementsByClassName('calendar-table')[0];
+			for (weekIndex=0; weekIndex < 5; weekIndex+=1) {
+
+				row = document.createElement('tr');
+				row.className = 'calendar-table-row';
+
+				for (dayIndex=0; dayIndex < 7; dayIndex+=1) {
+
+                    // TODO: ineffective
+                    cellEventModels = this.collection.getByDate(
+                        dateCounter.getFullYear(),
+                        dateCounter.getMonth(),
+                        dateCounter.getDate());
+
+                    cellCollection = new EventsCollection(cellEventModels);
+
+                    cellView = new CellView({
+                        cellDate: new Date(dateCounter.getTime()),
+                        dayName: weekIndex === 0 ? namesOfDays[dayIndex] : undefined,
+                        collection: cellCollection
+                    });
+
+					row.appendChild(cellView.render().el);
+
+					dateCounter.setDate(dateCounter.getDate()+1);
+
+				}
+
+                calendarTableElement.appendChild(row);
+
+			}
+
+            return this;
+
+        },
+
+        events: {
+            'submit .quick-add-event-form': 'createEvent',
+            'click .refresh-calendar': 'render',
+            'click .prev-month': 'prevMonth',
+            'click .next-month': 'nextMonth',
+            'click .today': 'today'
+        },
+
+        /**Pops up alert that the format of quick event creation is wrong*/
+        alertWrongQuickEventFormat: function() {
+            alert('Упс, непонятно!\n'
+                + 'Используйте формат ' + moment().format(dueDateFormat) + ', имя события');
+        },
+
+        createEvent: function (event) {
+
+            var formObject = formToObject(event.target),
+                dateName = formObject.dateName,
+                firstCommaIndex, secondCommaIndex,
+                datePart, dueDate, name;
+
+            firstCommaIndex = dateName.indexOf(',');
+            if (firstCommaIndex === -1) {
+                this.alertWrongQuickEventFormat();
+                return false;
+            }
+
+            secondCommaIndex = dateName.indexOf(',', firstCommaIndex+1);
+            if (secondCommaIndex === -1) {
+                this.alertWrongQuickEventFormat();
+                return false;
+            }
+
+            datePart = dateName.slice(0, secondCommaIndex);
+            dueDate = moment(datePart, dueDateFormat).toDate();
+            dueDate.setYear(this.curMonth.getFullYear());
+
+            name = dateName.slice(secondCommaIndex+1).trim();
+
+            this.collection.create({name: name, dueDate: dueDate});
+            this.$quickAddEventButton.popover('hide');
+
+            return false;
+
+        },
+
+        changeMonth: function(addMonths) {
+            this.curMonth.setMonth(this.curMonth.getMonth() + addMonths);
+            this.render();
+        },
+
+        prevMonth: function() {
+            this.changeMonth(-1);
+        },
+
+        nextMonth: function() {
+            this.changeMonth(1);
+        },
+
+        today: function() {
+            this.curMonth = moment().startOf('month').toDate();
+            this.render();
+        }
+
+    });
+
+    calendarCollection.fetch();
 	new CalendarView({collection: calendarCollection}).render();
 
-	/**
-	 * Member of event
-	 * @param source object with Member properties
-	 * @constructor
-	 */
-	/*function Member(source) {
-		this.name = source.name || '';
-		this.lastName = source.lastName || '';
-		this.patronymic = source.patronymic || '';
-		this.email = source.email || '';
-	}*/
-
-	/*Router = Backbone.Router.extend({
-
-	 routes: {
-	 '': 'home'
-	 //'new': 'editEvent',
-	 //'edit/:cid': 'editEvent'
-	 },
-
-	 home: function () {
-	 // TODO: how long does this object live?
-	 (new CalendarView({collection: calendarCollection})).render();
-	 }
-
-	 editEvent: function (cid) {
-	 var eventModel = calendarCollection.get(cid);
-	 // TODO: how long does this object live?
-	 (new EditEventView({model: eventModel, collection: calendarCollection})).render();
-	 }
-
-	 }),
-
-	router = new Router();
-
-	Backbone.history.start(); */
-
-}) (jQuery, _, Backbone, moment);
+}(jQuery, _, Backbone, moment));
 

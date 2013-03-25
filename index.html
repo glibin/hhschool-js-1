@@ -1,66 +1,106 @@
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
-    <title>Школа программистов HH - JavaScript / задание 1 / Иванов Антон</title>
+    <title>Школа программистов HH - JavaScript / задание 2 / Иванов Антон</title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="css/calendar.css"/>
     <link rel="stylesheet" href="css/bootstrap.css"/>
 </head>
 <body>
 
-<div class="header" id="header">
+<!-- Holder of whole calendar -->
+<div class="calendar"></div>
 
-</div>
+<!-- Calendar template -->
+<script type="text/template" id="calendar-template">
 
-<div class="calendar">
+    <div class="head">
 
-    <div class="calendar-header">
+        <div class="head-buttons">
+            <button class="head-buttons__button quick-add-event">Добавить</button>
+            <button class="head-buttons__button refresh-calendar">Обновить</button>
+        </div>
 
-        <div class="calendar-header__month">Март 2013</div>
+        <div class="search"></div>
 
     </div>
 
-    <table id="calendar-table" class="calendar-table">
+    <div class="calendar-body">
 
-    </table>
+        <div class="table-head">
 
-</div>
+            <a class="table-head__button prev-month">
+                <img src="img/arrow-left.png" width="3" height="5"/>
+            </a>
+            <div class="table-head__month"><%= monthYear %></div>
+            <a class="table-head__button next-month">
+                <img src="img/arrow-right.png" width="3" height="5"/>
+            </a>
+            <!-- TODO: ugly hover -->
+            <a class="table-head__button today">Сегодня</a>
 
-<!-- Header template -->
-<script type="text/template" id="header-template">
+        </div>
 
-    <div class="header-buttons">
-        <button class="header-button" id='add-event'>Добавить</button>
-        <button class="header-button">Обновить</button>
-    </div>
+        <table class="calendar-table">
 
-    <div class="header-search">
-        <img class="header-search__img" src="imgs/search.png" alt="search" />
-        <input class="header-search__input" type="text" />
-        <!-- TODO: tip -->
+        </table>
+
     </div>
 
 </script>
 
-<!-- Add event template -->
-<script type="text/template" id="add-event-template">
+<!-- Quick add event template -->
+<script type="text/template" id="quick-add-event-template">
 
-    <input id="add-event__name" type="text" name="name" autofocus="true" placeholder="Имя события">
-    <!-- TODO: date and time -->
-    <input id="add-event__date" type="text" value="<%= cur_date %>">
-    <!-- TODO: Enter does not work -->
-    <button id="add-event__create">Создать</button>
+    <form class="quick-add-event-form">
+        <label>
+            <input type="text" name="dateName" autofocus="true" value="<%= curDate %>, имя события">
+        </label>
+        <button type="submit">Создать</button>
+    </form>
 
 </script>
 
-<!-- Cell event template -->
-<script type="text/template" id="cell-event-template">
+<!-- Search template -->
+<script type="text/template" id="search-template">
 
-    <div class="calendar-cell-event-wrapper">
-        <div class="calendar-cell-event__name"><%= name %></div>
-        <!-- TODO: show members properly -->
-        <div class="calendar-cell-event__members"><%= members %></div>
+    <img class="search__img" src="img/search.png" width="25" height="25" alt="search" />
+    <input class="search__input dropdown-toggle" type="text" placeholder="Событие, дата или участник" />
+
+</script>
+
+<!-- Search event template -->
+<script type="text/template" id="search-event-template">
+
+    <div class="search-event">
+        <div class="search-event__name"><%= name %></div>
+        <div><%= dueDate %></div>
+        <hr>
     </div>
+
+</script>
+
+<!-- Cell template -->
+<script type="text/template" id="cell-template">
+
+    <div class="cell__head"><%= head %></div>
+
+</script>
+
+<!-- Cell existing event template -->
+<script type="text/template" id="cell-existing-event-template">
+
+    <div class="cell-event-wrapper">
+        <div class="cell-event__name"><%= name %></div>
+        <div class="cell-event__members"><%= members %></div>
+    </div>
+
+</script>
+
+<!-- Cell new event template -->
+<script type="text/template" id="cell-new-event-template">
+
+    <div class="cell-new-event-wrapper"></div>
 
 </script>
 
@@ -68,15 +108,25 @@
 <script type="text/template" id="edit-event-template">
     <form class="edit-event-form">
 
-        <input type="text" name="name" placeholder="Событие" value="<%= name %>"/>
+        <label>
+            <input type="text" name="name" placeholder="Событие" value="<%= name %>" autofocus/>
+        </label>
 
-        <input type="text" name="due_date" value="<%= due_date %>">
+        <label>
+            <input type="text" name="dueDate" value="<%= dueDate %>">
+        </label>
 
-        <input type="text" name="tags" placeholder="Теги" value="<%= tags %>">
+        <label>
+            <input type="text" name="tags" placeholder="Теги" value="<%= tags %>">
+        </label>
 
-        <input type="text" name="members" placeholder="Имена участников" value="<%= members %>">
+        <label>
+            <input type="text" name="members" placeholder="Имена участников" value="<%= members %>">
+        </label>
 
-        <input type="text" name="description" placeholder="Описание" value="<%= description %>">
+        <label>
+            <input type="text" name="description" placeholder="Описание" value="<%= description %>">
+        </label>
 
         <button class="save-event" type="submit">Готово</button>
         <% if(model) { %>
@@ -92,24 +142,8 @@
 <script src="js/moment.js"></script>
 <script src="js/underscore.js"></script>
 <script src="js/backbone.js"></script>
+<script src="js/backbone.localStorage.js"></script>
 <script src="js/main.js"></script>
-
-<!-- Calendar template
-<script type="text/template" id="calendar-template">
-    <a href="#/new" class="btn btn-primary">New event</a>
-    <hr />
-    <table class="table">
-        <thead>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Due date</th>
-            <th>Tags</th>
-            <th>Members</th>
-        </thead>
-        <tbody id="calendar-body">
-        </tbody>
-    </table>
-</script> -->
 
 </body>
 </html>

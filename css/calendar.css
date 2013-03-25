@@ -1,16 +1,16 @@
 
-.header {
+.head {
     box-shadow: 0 1px 5px grey;
     background-color: #f4f4f4;
     padding: 56px 50px 0px 50px;
     height: 44px;
 }
 
-    .header-buttons {
+    .head-buttons {
         display: inline-block;
     }
 
-        .header-button {
+        .head-buttons__button {
             display: inline-block;
             width: 80px;
             height: 25px;
@@ -22,27 +22,59 @@
             text-shadow: 0 1px 1px grey;
         }
 
-    .header-search {
+    .search {
         display: inline-block;
         float:right;
     }
 
-        .header-search__img {
+        .search__img {
             float: left;
-            width: 25px;
-            height: 25px;
         }
 
-        .header-search__input {
+        .search__input {
             height: 20px;
             width: 200px;
         }
 
-.calendar {
+            .search-event__name {
+                font-weight: bold;
+            }
+
+.calendar-body {
     margin-top: 10px;
     margin-left: 50px;
     margin-right: 50px;
 }
+    .table-head {
+        margin-top: 13px;
+        margin-bottom: 13px;
+    }
+
+        .table-head__button {
+            height: 9px;
+            display: inline-block;
+            border: 1px solid lightgray;
+            border-radius: 4px;
+            box-shadow: inset 0 0 2px grey;
+            padding: 3px 6px 3px 6px;
+            text-align: center;
+            line-height: 9px;
+            font-size: 10px;
+            color: #000000;
+        }
+
+        .table-head__button:hover {
+            text-decoration: none;
+            /* TODO: still ugly hover */
+        }
+
+        .table-head__month {
+            display: inline-block;
+            /* wider than in the mock
+               but we need to be sure that February 2013 is displayed in one line */
+            width: 110px;
+            text-align: center;
+        }
 
     .calendar-table {
         border-collapse: collapse;
@@ -50,11 +82,11 @@
         table-layout: fixed;
     }
 
-        .calendar-cell {
+        .cell {
             border: 1px solid lightgray;
             padding: 8px;
+            /* TODO: I do not know why min / max height / width does not work :-(*/
             height: 109px;
-
             text-align: left;
             vertical-align: top;
             font-family: sans-serif;
@@ -62,13 +94,21 @@
             color: grey;
         }
 
-        .calendar-cell-with-events {
-
-            background-color: #C0E2FD;
-
+        .cell:hover {
+            background-color: #F3F3F3;
         }
 
-            .calendar-cell-event__name {
-                font-weight: bold;
-            }
+        .cell-with-events {
+            background-color: #C0E2FD;
+        }
+                .cell-event__name {
+                    font-weight: bold;
+                }
 
+            .cell-new-event {
+                height: 100%;
+            }
+                .cell-new-event-wrapper {
+                    min-height: 20px;
+                    height: 100%;
+                }
