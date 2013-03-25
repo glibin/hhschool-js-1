@@ -1,11 +1,149 @@
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
-	<title>Школа программистов HH - JavaScript / задание 1</title>
-	<meta charset="utf-8">
+    <title>Школа программистов HH - JavaScript / задание 2 / Иванов Антон</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/calendar.css"/>
+    <link rel="stylesheet" href="css/bootstrap.css"/>
 </head>
 <body>
-	
-<script src="js/main.js"></script>	
-</body>	
-</html>		
+
+<!-- Holder of whole calendar -->
+<div class="calendar"></div>
+
+<!-- Calendar template -->
+<script type="text/template" id="calendar-template">
+
+    <div class="head">
+
+        <div class="head-buttons">
+            <button class="head-buttons__button quick-add-event">Добавить</button>
+            <button class="head-buttons__button refresh-calendar">Обновить</button>
+        </div>
+
+        <div class="search"></div>
+
+    </div>
+
+    <div class="calendar-body">
+
+        <div class="table-head">
+
+            <a class="table-head__button prev-month">
+                <img src="img/arrow-left.png" width="3" height="5"/>
+            </a>
+            <div class="table-head__month"><%= monthYear %></div>
+            <a class="table-head__button next-month">
+                <img src="img/arrow-right.png" width="3" height="5"/>
+            </a>
+            <!-- TODO: ugly hover -->
+            <a class="table-head__button today">Сегодня</a>
+
+        </div>
+
+        <table class="calendar-table">
+
+        </table>
+
+    </div>
+
+</script>
+
+<!-- Quick add event template -->
+<script type="text/template" id="quick-add-event-template">
+
+    <form class="quick-add-event-form">
+        <label>
+            <input type="text" name="dateName" autofocus="true" value="<%= curDate %>, имя события">
+        </label>
+        <button type="submit">Создать</button>
+    </form>
+
+</script>
+
+<!-- Search template -->
+<script type="text/template" id="search-template">
+
+    <img class="search__img" src="img/search.png" width="25" height="25" alt="search" />
+    <input class="search__input dropdown-toggle" type="text" placeholder="Событие, дата или участник" />
+
+</script>
+
+<!-- Search event template -->
+<script type="text/template" id="search-event-template">
+
+    <div class="search-event">
+        <div class="search-event__name"><%= name %></div>
+        <div><%= dueDate %></div>
+        <hr>
+    </div>
+
+</script>
+
+<!-- Cell template -->
+<script type="text/template" id="cell-template">
+
+    <div class="cell__head"><%= head %></div>
+
+</script>
+
+<!-- Cell existing event template -->
+<script type="text/template" id="cell-existing-event-template">
+
+    <div class="cell-event-wrapper">
+        <div class="cell-event__name"><%= name %></div>
+        <div class="cell-event__members"><%= members %></div>
+    </div>
+
+</script>
+
+<!-- Cell new event template -->
+<script type="text/template" id="cell-new-event-template">
+
+    <div class="cell-new-event-wrapper"></div>
+
+</script>
+
+<!-- Edit event template -->
+<script type="text/template" id="edit-event-template">
+    <form class="edit-event-form">
+
+        <label>
+            <input type="text" name="name" placeholder="Событие" value="<%= name %>" autofocus/>
+        </label>
+
+        <label>
+            <input type="text" name="dueDate" value="<%= dueDate %>">
+        </label>
+
+        <label>
+            <input type="text" name="tags" placeholder="Теги" value="<%= tags %>">
+        </label>
+
+        <label>
+            <input type="text" name="members" placeholder="Имена участников" value="<%= members %>">
+        </label>
+
+        <label>
+            <input type="text" name="description" placeholder="Описание" value="<%= description %>">
+        </label>
+
+        <button class="save-event" type="submit">Готово</button>
+        <% if(model) { %>
+            <button class="remove-event">Удалить</button>
+        <% }; %>
+
+    </form>
+</script>
+
+<!-- Scripts -->
+<script src="js/jquery.js"></script>
+<script src="js/bootstrap.js"></script>
+<script src="js/moment.js"></script>
+<script src="js/underscore.js"></script>
+<script src="js/backbone.js"></script>
+<script src="js/backbone.localStorage.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
