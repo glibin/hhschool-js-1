@@ -122,7 +122,7 @@ Event.prototype._createListeners = function () {
 Event.propertySet = new Set(['id', 'creationDate', 'title', 'eventDate', 'persons', 'description']);
 Event.updatablePropertySet = (new Set(Event.propertySet.asArray())).remove('id').remove('creationDate');
 Event.onPropertyChangeListeners = {
-    //'title': '_onTitleChangeListeners',
+    'title': '_onTitleChangeListeners',
     'eventDate': '_onDateChangeListeners'
     //'persons': '_onPersonsChangeListeners,
     //'description': '_onDescriptionChangeListeners'
@@ -166,7 +166,7 @@ Event.prototype.updateProperties = function (properties) {
         old_value = this['_' + prop];
         new_value = properties[prop];
         if (prop == 'eventDate') {
-            new_value = new Date(new_value.getYear(), new_value.getMonth());
+            new_value = new Date(new_value.getFullYear(), new_value.getMonth(), new_value.getDate());
         }
         this['_' + prop] = new_value;
         this.onPropertyChange(prop, old_value, new_value);
@@ -235,6 +235,13 @@ Event.compareEventsByDueDate = function (event1, event2) {
     return event1.getEventDate() - event2.getEventDate();
 };
 
+Event.compareEventsByName = function (event1, event2) {
+    'use strict';
+    var name1 = event1.getProperties().title ? event1.getProperties().title : event1.getProperties().id
+    var name2 = event2.getProperties().title ? event2.getProperties().title : event2.getProperties().id
+    return name1.localeCompare(name2);
+};
+
 
 /**
  * Generate next Event ID
@@ -257,6 +264,12 @@ Event.prototype.addDeleteListener = function (listener) {
     "use strict";
     log("[Event] Deletion listener added to event with id: " + this._id);
     this._onDeleteListeners.push(listener);
+};
+
+Event.prototype.addTitleChangeListener = function (listener) {
+    "use strict";
+    log("[Event] Title change listener added to event with id: " + this._id);
+    this._onTitleChangeListeners.push(listener);
 };
 
 Event.prototype.toJSON = function () {
@@ -311,12 +324,13 @@ function EventManager() {
  */
 EventManager.prototype._registerEventDate = function (event, date) {
     "use strict";
-    if (!this._eventsByDate.hasOwnProperty(date)) {
-        this._eventsByDate[date] = [];
-        log("[EM] New day added to EventManager " + date);
+    if (!this._eventsByDate.hasOwnProperty(date.toDateString())) {
+        this._eventsByDate[date.toDateString()] = [];
+        log("[EM] New day added to EventManager " + date.toDateString());
     }
-    this._eventsByDate[date].push(event);
-    log("[EM] Event " + event.getProperties().id + " registered for date " + date);
+    this._eventsByDate[date.toDateString()].push(event);
+    this._eventsByDate[date.toDateString()].sort(Event.compareEventsByName);
+    log("[EM] Event " + event.getProperties().id + " registered for date " + date.toDateString());
 };
 
 /**
@@ -331,15 +345,15 @@ EventManager.prototype._unregisterEventDate = function (event, date) {
     if (date === undefined) {
         date = event.getProperties().eventDate;
     }
-    log("[EM] Unregistering event " + event.getProperties().id + " from date " + date);
-    if (!this._eventsByDate.hasOwnProperty(date)) {
+    log("[EM] Unregistering event " + event.getProperties().id + " from date " + date.toDateString());
+    if (!this._eventsByDate.hasOwnProperty(date.toDateString())) {
         log("[EM] Error. No such date.")
         return;
     }
-    index = this._eventsByDate[date].indexOf(event);
-    if (index >= 0)
-        this._eventsByDate[date].splice(index, 1);
-    else
+    index = this._eventsByDate[date.toDateString()].indexOf(event);
+    if (index >= 0) {
+        this._eventsByDate[date.toDateString()].splice(index, 1);
+    } else
         log("[EM] Error. No such event for the date.");
 }
 
@@ -400,6 +414,23 @@ EventManager.prototype.getEventById = function (eventId) {
 };
 
 
+/**
+ * Get all the events for particular date
+ * @param date
+ * @return {*}
+ */
+EventManager.prototype.getEventsByDate = function (date) {
+    "use strict";
+    log("[EM] Getting events by Date: " + date.toDateString());
+    var events = this._eventsByDate[date.toDateString()];
+    if (events === undefined) {
+        return []
+    } else {
+        return events;
+    }
+};
+
+
 EventManager.prototype.toJSON = function () {
     var event,
         eventID,
@@ -437,9 +468,226 @@ EventManager.prototype.dump = function () {
 };
 
 
+// ### Calendar ###
+// #######################################################################################################
+
+/**
+ * Create new Calendar which holds an instance of eventManger to keep all events and displayed calendar.
+ * @param eventManager
+ * @constructor
+ */
+function Calendar(eventManager) {
+    this._eventManager = eventManager;
+    this._divsByDates = {};
+
+    this._date = new Date(); // Start with current moment
+    this._date = new Date(this._date.getFullYear(), this._date.getMonth());
+    this.redrawCalendar();
+}
+
+monthNames = {
+    0: "Январь",
+    1: "Февраль",
+    2: "Март",
+    3: "Апрель",
+    4: "Май",
+    5: "Июнь",
+    6: "Июль",
+    7: "Август",
+    8: "Сентябрь",
+    9: "Октябрь",
+    10: "Ноябрь",
+    11: "Деабрь"
+}
+
+dayNames = {
+    0: "Воскресенье",
+    1: "Понедельник",
+    2: "Вторник",
+    3: "Среда",
+    4: "Четверг",
+    5: "Пятница",
+    6: "Суббота"
+}
+
+/**
+ * Refill corresponding div with the events from the event manager for a particular date
+ * @param date
+ * @private
+ */
+Calendar.prototype.redrawDate = function (date) {
+    log("[C]Redrawing date:" + date.toDateString())
+    var div_holder = this._divsByDates[date.toDateString()];
+    if (!div_holder) {
+        log("[C]...No such date is displayed. Skipping.")
+        return;
+    }
+    var events = this._eventManager.getEventsByDate(date);
+    div_holder.innerHTML = '';
+    for (var i = 0; i < events.length; i++) {
+        var event = events[i];
+        var div_event = document.createElement("div");
+        div_event.className = "event";
+        div_event.id = event.getProperties().id;
+        var content = document.createTextNode(event.getProperties().title ?
+            event.getProperties().title :
+            "Без имени");
+        div_event.appendChild(content);
+        div_holder.appendChild(div_event);
+    }
+    log("[C]...Div has been redrawn.")
+}
 
 
+/**
+ * Generate new calendar table and insert (or update if exists) in the page.
+ * This also update all the mappings from dates to divs.
+ */
+Calendar.prototype._generateAndUpdateTable = function () {
+    log("[C] Generating and updating table.")
+    this._divsByDates = {};
 
+    var table = document.createElement('table');
+    table.id = 'caltable';
+    var table_body = document.createElement('body');
+    var month = this._date.getMonth();
+    var year = this._date.getFullYear();
+    var displayingDay = new Date(year, month); // First day of the month
+    while (displayingDay.getDay() != 1) { // if not Monday rewind day-by-day to the first encountered Monday
+        displayingDay.setDate(displayingDay.getDate() - 1); // rewind one day back
+    }
+
+    var counter = 0;
+    while(true) {
+        var tr = document.createElement('tr');
+        table.appendChild(tr);
+        table.className = 'calendar';
+        for (var i=0; i<7; i++) {
+            var td = document.createElement('td');
+            tr.appendChild(td);
+            var p = document.createElement('p');
+            p.className = 'cday';
+            p.innerHTML = counter < 7 ? dayNames[displayingDay.getDay()] + ", " + displayingDay.getDate() : displayingDay.getDate();
+            td.appendChild(p);
+            var div = document.createElement('div');
+            td.appendChild(div);
+
+            var date_to_store = new Date(displayingDay);
+            this._divsByDates[date_to_store.toDateString()] = div;
+            this.redrawDate(date_to_store);
+
+            displayingDay.setDate(displayingDay.getDate() + 1);
+            counter += 1;
+        }
+        // Check if the this day (which is monday) is the new month
+        if (displayingDay.getMonth() != month) break;
+    }
+    var table_to_replace = document.getElementById('caltable');
+    var div = document.getElementById('caldiv');
+    if (table_to_replace) {
+        div.replaceChild(table, table_to_replace);
+    } else {
+        div.appendChild(table);
+    }
+
+    log("[C] Table has been regenerated and updated.")
+}
+
+/**
+ * Display month
+ * @param date Date to take month from
+ */
+Calendar.prototype.redrawCalendar = function () {
+    log("[C] Redrawing calendar")
+    // Date between arrows
+    document.getElementById('cdate').innerHTML = '' + monthNames[this._date.getMonth()] + ' ' + this._date.getFullYear();
+
+    // Table
+    this._generateAndUpdateTable();
+}
+
+/**
+ * Show next month
+ */
+Calendar.prototype.nextMonth = function() {
+    this._date.setMonth(this._date.getMonth() + 1);
+    this.redrawCalendar();
+}
+
+/**
+ * Show previous month
+ */
+Calendar.prototype.previousMonth = function() {
+    this._date.setMonth(this._date.getMonth() - 1);
+    this.redrawCalendar();
+}
+
+/**
+ * Set calander to the current month
+ */
+Calendar.prototype.setCurrentMonth = function() {
+    this._date = new Date(); // Start with current moment
+    this.redrawCalendar();
+}
+
+/**
+ * Add new event.
+ * Adds to eventManager and updates currently displayed calendar.
+ * @param event
+ */
+Calendar.prototype.addEvent = function (event) {
+    "use strict";
+    log("[C] Adding new event to the calendar.");
+    this._eventManager.addEvent(event);
+    this.redrawDate(event.getProperties().eventDate);
+    event.addDateChangeListener(this.eventDateChangeListener.bind(this));
+    event.addDeleteListener(this.eventDeletionListener.bind(this));
+    event.addTitleChangeListener(this.eventTitleChangeListener.bind(this));
+};
+
+/**
+ * If div for specified day is displayed, remove event from this div and redraw it.
+ * @param event
+ * @param date
+ * @private
+ */
+Calendar.prototype._removeEventFromDiv = function(event, date) {
+    "use strict";
+    log("[C] Removing event " + event.getProperties().id + " from div if displayed.");
+    var div_holder = this._divsByDates[date.toDateString()];
+    if (!div_holder) {
+        log("   This date is not displayed. Skipping.");
+        return;
+    }
+    var event_div = document.getElementById(event.getProperties().id);
+    div_holder.removeChild(event_div);
+    // The element will redraw itself on removeChild.
+    log("[C]...Event has been removed from div.");
+}
+
+
+/**
+ * This is a callback function triggered on event date change.
+ * @param event
+ */
+Calendar.prototype.eventDateChangeListener = function (event, oldDate, newDate) {
+    "use strict";
+    log("[C] Triggered DateChangeListener");
+    this._removeEventFromDiv(event, oldDate);
+    this.redrawDate(newDate);
+};
+
+Calendar.prototype.eventDeletionListener = function(event) {
+    "use strict";
+    log("[C] Triggered EventDeletionListener");
+    this._removeEventFromDiv(event, event.getProperties().eventDate);
+}
+
+Calendar.prototype.eventTitleChangeListener = function(event, oldTitle, newTitle) {
+    "use strict";
+    log("[C] Triggered eventTitleChangeListener");
+    this.redrawDate(event.getProperties().eventDate);
+}
 
 // ### Miscellaneous ###
 // ########################################################################################################
@@ -481,15 +729,28 @@ function log(s) {
 }
 
 
-// ## Demonstation
+// ## Initialization
 // ############################
 
 em = new EventManager();
-e = new Event({'eventDate': new Date(), 'title': 'New event'});
-em.addEvent(e);
-e.updateProperties({'eventDate': new Date(2015,0)});
-console.log(em);
-s = em.dump()
-console.log(s);
-emn = EventManager.fromJSON(s);
-console.log(emn);
+c = new Calendar(em);
+
+
+// ## Setting hooks
+// ##############################
+document.getElementById("prevmonth").onclick = c.previousMonth.bind(c);
+document.getElementById("nextmonth").onclick = c.nextMonth.bind(c);
+document.getElementById("currmonth").onclick = c.setCurrentMonth.bind(c);
+document.getElementById("refresh").onclick = c.redrawCalendar.bind(c);
+
+
+// # Testing
+log('!!!')
+e = new Event({'eventDate': new Date()});
+c.addEvent(e);
+e = new Event({'eventDate': new Date()});
+c.addEvent(e);
+e = new Event({'eventDate': new Date(), 'title': "_ha"});
+c.addEvent(e);
+e.updateProperties({'eventDate': new Date(2013,1,27)});
+

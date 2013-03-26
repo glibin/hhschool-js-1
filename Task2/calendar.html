@@ -1,11 +1,37 @@
 <!DOCTYPE HTML>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
-	<title>Школа программистов HH - JavaScript / задание 2</title>
-	<meta charset="utf-8">
+    <title>Школа программистов HH - JavaScript / задание 2</title>
+    <meta charset="utf-8">
+    <link href="css/bootstrap.css" rel="stylesheet" media="screen">
+    <link href="css/calendar.css" rel="stylesheet">
 </head>
 <body>
-	
+<div class="navbar navbar-static-top ctopnav">
+    <div class="buttons">
+        <button class="btn btn-primary">Добавить</button>
+        <button id="refresh" class="btn btn-primary next">Обновить</button>
+    </div>
+    <div class="search">
+        <form class="navbar-search">
+            <i class="icon-search"></i>
+            <input type="text" class="search-query" placeholder="Событие, дата или участник">
+        </form>
+    </div>
+</div>
+<div class="cdatenav">
+    <div style="display: inline-block;">
+        <a id="prevmonth" class="btn" href="#" onclick="c.previousMonth()"><i class="icon-chevron-left"></i></a>
+        <div id="cdate" class="cdate"></div>
+        <a id="nextmonth" class="btn" href="#"  onclick="c.nextMonth()"><i class="icon-chevron-right"></i></a>
+    </div>
+    <button id="currmonth" class="btn next" onclick="c.setCurrentMonth()">Сегодня</button>
+</div>
+<div id="caldiv" class="calendar">
+        <table id="caltable" class='calendar'></table> <!-- This table will be replaced by JavaScript -->
+</div>
+<script src="http://code.jquery.com/jquery.js"></script>
+<script src="js/bootstrap.js"></script>
 <script src="calendar_engine.js"></script>
-</body>	
+</body>
 </html>		

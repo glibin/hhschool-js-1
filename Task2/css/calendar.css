@@ -1,0 +1,92 @@
+body,html{
+    height:100%;
+}
+
+div.ctopnav {
+    background-color: #f3f3f3;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.067);
+    height: 6em;
+    position: relative;
+}
+
+div.buttons {
+    position: absolute;
+    bottom: 1em;
+    left: 2.5em;
+}
+
+button.next {
+    margin-left: 1em;
+}
+
+div.search {
+    display: inline-block;
+    position: absolute;
+    bottom: 1em;
+    right: 2.5em;
+}
+
+div.cdatenav {
+    padding-top: 1em;
+    padding-left: 2em;
+    padding-right: 2em;
+}
+
+div.cdate {
+    display: inline-block;
+    font-size: 1.4em;
+    vertical-align: middle;
+    text-align: center;
+    width: 8em;
+}
+
+div.calendar {
+    padding-top: 1em;
+    padding-left: 2em;
+    padding-right: 2em;
+    height: 80%;
+}
+
+table.calendar {
+    table-layout: fixed;
+    width: 100%;
+    height: 100%;
+    border: solid 1px #f3f3f3;
+}
+
+table.calendar td {
+    border: solid 1px #f3f3f3;
+    vertical-align: top;
+}
+
+p.cday {
+    color: #9f9f9f;
+    font-family: sans-serif;
+    font-size: 0.9em;
+    padding-left: 0.75em;
+    padding-top: 0.25em;
+}
+
+table.calendar td > div {
+    width:100%;
+    height: 70%;
+    overflow: auto;
+}
+
+table.calendar div.event {
+    height: 1.3em;
+    overflow: hidden;
+    margin-left: 0.3em;
+    margin-right: 0.3em;
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
+
+    font-size: 0.9em;
+    font-family: "Verdana; serif";
+    color: #111;
+    font-weight: 300;
+
+    background: rgba(188, 222, 255, 0.56);
+    border: solid 1px #4ebeff;
+
+}
