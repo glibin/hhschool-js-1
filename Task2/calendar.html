@@ -9,27 +9,57 @@
 <body>
 <div class="navbar navbar-static-top ctopnav">
     <div class="buttons">
-        <button class="btn btn-primary">Добавить</button>
+        <button id="addArbitraryButton" class="btn btn-primary">Добавить</button>
         <button id="refresh" class="btn btn-primary next">Обновить</button>
     </div>
     <div class="search">
-        <form class="navbar-search">
-            <i class="icon-search"></i>
-            <input type="text" class="search-query" placeholder="Событие, дата или участник">
-        </form>
+        <i class="icon-search"></i>
+        <input type="text" class="dropdown-toggle" placeholder="Событие, дата или участник">
     </div>
 </div>
 <div class="cdatenav">
     <div style="display: inline-block;">
-        <a id="prevmonth" class="btn" href="#" onclick="c.previousMonth()"><i class="icon-chevron-left"></i></a>
+        <a id="prevmonth" class="btn" onclick="c.previousMonth()"><i class="icon-chevron-left"></i></a>
+
         <div id="cdate" class="cdate"></div>
-        <a id="nextmonth" class="btn" href="#"  onclick="c.nextMonth()"><i class="icon-chevron-right"></i></a>
+        <a id="nextmonth" class="btn" onclick="c.nextMonth()"><i class="icon-chevron-right"></i></a>
     </div>
     <button id="currmonth" class="btn next" onclick="c.setCurrentMonth()">Сегодня</button>
 </div>
 <div id="caldiv" class="calendar">
-        <table id="caltable" class='calendar'></table> <!-- This table will be replaced by JavaScript -->
+    <table id="caltable" class='calendar'></table>
+    <!-- This table will be replaced by JavaScript -->
 </div>
+
+
+<div id="addArbitraryDateForm" class="hide">
+    <button id="addArbitraryDateFormCloseButton" type="button" class="close" \
+    onclick="$(&quot;#addArbitraryButton&quot;).popover(&quot;hide&quot;);">&times;</button>
+    <form class="addArbitraryDateFormClass">
+        <input id="addArbitraryDateFormInput" placeholder="5 марта, День рождения" type="text"></input>
+        <button id="addArbitraryDateFormButton" class="btn btn-success">Создать</button>
+    </form>
+</div>
+
+
+<div id="AddSpecificDateForm" class="hide">
+    <button id="addSpecificDateFormCloseButton" type="button" class="close"
+    \
+    onclick="$(&quot;div.cell&quot;).popover(&quot;hide&quot;);">&times;</button>
+    <form class="addSpecificDateFormClass">
+        <input id="title" placeholder="Название" type="text"></input>
+        <input id="date" placeholder="Дата" type="text"></input>
+        <input id="participants" placeholder="Участники" type="text"></input>
+        <input id="description" placeholder="Описание" type="text"></input>
+    </form>
+    <div id="AddSpecificDateFormButtons">
+        <button id="addSpecificDateFormButtonCreate" class="btn btn-success btn-large">Создать</button>
+        <a id="addSpecificDateFormButtonDelete">Отмена</button>
+    </div>
+
+</div>
+
+
 <script src="http://code.jquery.com/jquery.js"></script>
 <script src="js/bootstrap.js"></script>
 <script src="calendar_engine.js"></script>

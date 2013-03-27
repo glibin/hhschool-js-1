@@ -165,6 +165,9 @@ Event.prototype.updateProperties = function (properties) {
         }
         old_value = this['_' + prop];
         new_value = properties[prop];
+        if (old_value == new_value) {
+            continue;
+        }
         if (prop == 'eventDate') {
             new_value = new Date(new_value.getFullYear(), new_value.getMonth(), new_value.getDate());
         }
@@ -478,7 +481,7 @@ EventManager.prototype.dump = function () {
  */
 function Calendar(eventManager) {
     this._eventManager = eventManager;
-    this._divsByDates = {};
+    this._divsByDates = {}; // to have instant access to the div representing the given date
 
     this._date = new Date(); // Start with current moment
     this._date = new Date(this._date.getFullYear(), this._date.getMonth());
@@ -531,7 +534,7 @@ Calendar.prototype.redrawDate = function (date) {
         div_event.id = event.getProperties().id;
         var content = document.createTextNode(event.getProperties().title ?
             event.getProperties().title :
-            "Без имени");
+            "Без названия");
         div_event.appendChild(content);
         div_holder.appendChild(div_event);
     }
@@ -565,16 +568,21 @@ Calendar.prototype._generateAndUpdateTable = function () {
         for (var i=0; i<7; i++) {
             var td = document.createElement('td');
             tr.appendChild(td);
+            var div = document.createElement('div');
+            div.className = 'cell';
+            td.appendChild(div);
             var p = document.createElement('p');
             p.className = 'cday';
             p.innerHTML = counter < 7 ? dayNames[displayingDay.getDay()] + ", " + displayingDay.getDate() : displayingDay.getDate();
-            td.appendChild(p);
-            var div = document.createElement('div');
-            td.appendChild(div);
+            div.appendChild(p);
+            var div_events = document.createElement('div');
+            div.appendChild(div_events);
 
             var date_to_store = new Date(displayingDay);
-            this._divsByDates[date_to_store.toDateString()] = div;
+            this._divsByDates[date_to_store.toDateString()] = div_events;
             this.redrawDate(date_to_store);
+
+            td.date = date_to_store;
 
             displayingDay.setDate(displayingDay.getDate() + 1);
             counter += 1;
@@ -590,6 +598,7 @@ Calendar.prototype._generateAndUpdateTable = function () {
         div.appendChild(table);
     }
 
+    reattach_table_popovers();
     log("[C] Table has been regenerated and updated.")
 }
 
@@ -742,6 +751,31 @@ document.getElementById("prevmonth").onclick = c.previousMonth.bind(c);
 document.getElementById("nextmonth").onclick = c.nextMonth.bind(c);
 document.getElementById("currmonth").onclick = c.setCurrentMonth.bind(c);
 document.getElementById("refresh").onclick = c.redrawCalendar.bind(c);
+
+$popover = $('#addArbitraryButton').popover({
+    html : true,
+    placement: "bottom",
+    content: function() {
+        return $("#addArbitraryDateForm").html();
+    }
+});
+
+function reattach_table_popovers() {
+    $("div.cell").popover({
+        html : true,
+        placement: "right",
+        content: function() {
+            //$("table.calendar  td").popover("toggle");
+            return $("#AddSpecificDateForm").html();
+        }
+    });
+
+    $('#addArbitraryButton, div.cell').
+        on('show',
+        function(event) { $('#addArbitraryButton, div.cell').
+            filter(function(index, element) { return element != event.target; }).popover('hide'); });
+};
+reattach_table_popovers();
 
 
 // # Testing
