@@ -581,6 +581,7 @@ Calendar.prototype._generateAndUpdateTable = function () {
             var date_to_store = new Date(displayingDay);
             this._divsByDates[date_to_store.toDateString()] = div_events;
             this.redrawDate(date_to_store);
+            $(div).data('date', date_to_store);
 
             td.date = date_to_store;
 
@@ -632,11 +633,21 @@ Calendar.prototype.previousMonth = function() {
 }
 
 /**
- * Set calander to the current month
+ * Set calender to the current month.
  */
 Calendar.prototype.setCurrentMonth = function() {
-    this._date = new Date(); // Start with current moment
-    this.redrawCalendar();
+    var date = new Date(); // Start with current moment
+    this.setMonth(date);
+}
+
+/**
+ * Set calender to the specified month
+ */
+Calendar.prototype.setMonth = function(date) {
+    if (this._date.getFullYear() != date.getFullYear() || this._date.getMonth() != date.getMonth()) {
+        this._date = date;
+        this.redrawCalendar();
+    }
 }
 
 /**
@@ -672,6 +683,16 @@ Calendar.prototype._removeEventFromDiv = function(event, date) {
     div_holder.removeChild(event_div);
     // The element will redraw itself on removeChild.
     log("[C]...Event has been removed from div.");
+}
+
+/**
+ * Get div corresponding to concrete date.
+ * Returns undefined if specified day is not displayed.
+ * @param date
+ */
+Calendar.prototype.getDivByDate = function(date) {
+    var day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return  this._divsByDates[day.toDateString()];
 }
 
 
@@ -760,26 +781,104 @@ $popover = $('#addArbitraryButton').popover({
     }
 });
 
+
+function parseEventFromInput (button) {
+    var form = $(button).closest('div.popover-content').find("form.addArbitraryDateFormClass"),
+        value = form.find('input#addArbitraryDateFormInput').val(),
+        sep = ',',
+        date,
+        title;
+    if(!value) {
+        return;
+    }
+    if (value.indexOf(';') != -1) {
+        sep = ';';
+    }
+    var split = value.split(sep);
+    if (!split[1]) {
+        date = moment(new Date());
+        title = split[0];
+    } else {
+        date = moment(split[0]);
+        if (!date.isValid()) {
+            date = moment(new Date());
+        }
+        title = split[1];
+    }
+
+    $('button#addArbitraryButton').popover('hide');
+
+
+    c.setMonth(date.toDate());
+
+    // date = date.format("YYYY-MM-DD");
+
+    var div = c.getDivByDate(date.toDate());
+    if (!div) {
+        log('[Hooks] [parseEventFromInput] Can not get div by date');
+        return;
+    }
+    log(div);
+    var context = $(div).closest('div.cell').popover('show');
+    $(context.data('popover').$tip[0]).find('input#title').attr('value', title);
+
+
+}
+
+
+
+
 function reattach_table_popovers() {
     $("div.cell").popover({
         html : true,
         placement: "right",
         content: function() {
-            //$("table.calendar  td").popover("toggle");
-            return $("#AddSpecificDateForm").html();
+            var date = new Date($(this).data('date'));
+            var dateText = moment(date).format("YYYY-MM-DD");
+            var form = $("#AddSpecificDateForm");
+            form.find("input#date").attr('value', dateText);
+            form.find("input#title").attr('value', '');
+            form.find("input#participants").attr('value', '');
+            form.find("input#description").attr('value', '');
+            return form.html();
         }
     });
 
-    $('#addArbitraryButton, div.cell').
+    $('*').
         on('show',
-        function(event) { $('#addArbitraryButton, div.cell').
-            filter(function(index, element) { return element != event.target; }).popover('hide'); });
+        function(event) {
+            $('*').not(event.target).popover('hide');
+        });
 };
-reattach_table_popovers();
+
+
+function addEventFromForm(button) {
+    var form = $(button).closest('div.popover-content').find("form.addSpecificDateFormClass"),
+        title = form.find('input#title').val(),
+        date = new Date(form.find('input#date').val()),
+        participants = form.find('input#participants').val(),
+        description = form.find('textarea#description').val(),
+
+        event = new Event({
+            'title': title,
+            'eventDate': date,
+            'persons': participants,
+            'description': description
+        });
+
+        c.addEvent(event);
+
+        $('*').popover('hide');
+}
+
+// ### Library settings ###
+// ##################################
+moment.lang('ru');
+
 
 
 // # Testing
-log('!!!')
+log('!!! Starting testing !!!')
 e = new Event({'eventDate': new Date()});
 c.addEvent(e);
 e = new Event({'eventDate': new Date()});

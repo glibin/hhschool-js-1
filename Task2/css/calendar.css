@@ -101,6 +101,16 @@ table.calendar div.event {
     border: solid 1px #4ebeff;
 }
 
+/* Add arbitrary event */
+
+a#addArbitraryDateFormButtonCancel {
+    float: right;
+}
+
+/* Add event for a specific date */
+
+textarea{resize: none}
+
 div#AddSpecificDateFormButtons {
     width: 100%;
 }
