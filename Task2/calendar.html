@@ -1,0 +1,88 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <title>Школа программистов HH - JavaScript / задание 2</title>
+    <meta charset="utf-8">
+    <link href="css/bootstrap.css" rel="stylesheet" media="screen">
+    <link href="css/calendar.css" rel="stylesheet">
+</head>
+<body>
+<div class="navbar navbar-static-top ctopnav">
+    <div class="buttons">
+        <button id="addArbitraryButton" class="btn btn-primary">Добавить</button>
+        <button id="refresh" class="btn btn-primary next">Обновить</button>
+    </div>
+    <div class="search">
+        <i class="icon-search"></i>
+        <input id="searchbox" type="text" data-provide="typeahead" autocomplete="off" placeholder="Событие, дата или участник">
+    </div>
+</div>
+<div class="cdatenav">
+    <div style="display: inline-block;">
+        <a id="prevmonth" class="btn" onclick="c.previousMonth()"><i class="icon-chevron-left"></i></a>
+
+        <div id="cdate" class="cdate"></div>
+        <a id="nextmonth" class="btn" onclick="c.nextMonth()"><i class="icon-chevron-right"></i></a>
+    </div>
+    <button id="currmonth" class="btn next" onclick="c.setCurrentMonth()">Сегодня</button>
+</div>
+<div id="caldiv" class="calendar">
+    <table id="caltable" class='calendar'></table>
+    <!-- This table will be replaced by JavaScript -->
+</div>
+
+
+<div id="addArbitraryDateForm" class="hide">
+    <button id="addArbitraryDateFormCloseButton" type="button" class="close" onclick="$(&quot;#addArbitraryButton&quot;).popover(&quot;hide&quot;);">&times;</button>
+    <form class="addArbitraryDateFormClass" onsubmit="return false;">
+        <input id="addArbitraryDateFormInput" placeholder="2013-03-30, День рождения" type="text"></input>
+    </form>
+    <button id="addArbitraryDateFormButton" class="btn btn-success" onclick="parseAndAddEventFromTopAddInput(this);">Создать</button>
+    <a id="addArbitraryDateFormButtonCancel" onclick="$(&quot;#addArbitraryButton&quot;).popover(&quot;hide&quot;);">Отмена</a>
+</div>
+
+
+<div id="AddSpecificDateForm" class="hide">
+    <button id="addSpecificDateFormCloseButton" type="button" class="close" onclick="$(&quot;div.cell&quot;).popover(&quot;hide&quot;);">&times;</button>
+    <form class="addSpecificDateFormClass">
+        <input id="title" placeholder="Название" type="text"></input>
+        <input id="date" placeholder="Дата" type="date"></input>
+        <input id="participants" placeholder="Участники" type="text"></input>
+        <textarea id="description" rows="5" placeholder="Описание" type="text"></textarea>
+    </form>
+    <div id="AddSpecificDateFormButtons">
+        <button id="addSpecificDateFormButtonCreate" class="btn btn-success btn-large" onclick="addEventFromForm(this);">Создать</button>
+        <a id="addSpecificDateFormButtonDelete" onclick="$(&quot;div.cell&quot;).popover(&quot;hide&quot;);">Отмена</a>
+    </div>
+
+</div>
+
+<div id="EventEditForm" class="hide">
+    <button id="EventEditFormCloseButton" type="button" class="close" onclick="$(&quot;div.event&quot;).popover(&quot;hide&quot;);">&times;</button>
+    <form class="EventEditFormClass">
+        <input id="title" placeholder="Название" type="text"></input>
+        <input id="date" placeholder="Дата" type="date" data-date-format="dd.mm.yyyy"></input>
+        <input id="participants" placeholder="Участники" type="text"></input>
+        <textarea id="description" rows="5" placeholder="Описание" type="text"></textarea>
+    </form>
+    <div id="EventEditFormButtons">
+        <button id="EventEditFormButtonEdit" class="btn btn-success btn-large" onclick="updateEventFromForm(this);">Обновить</button>
+        <button id="EventEditFormButtonDelete" class="btn btn-danger btn-small pull-right" onclick="deleteEventFromForm(this);">Удалить</a>
+    </div>
+
+</div>
+
+
+<div class='typeahead_wrapper' class="hide">
+    <div class='typeahead_title'></div>
+    <div class='typeahead_date'></div>
+</div>
+
+
+<script src="http://code.jquery.com/jquery.js"></script>
+<script src="js/bootstrap.js"></script>
+<script src="https://raw.github.com/timrwood/moment/2.0.0/min/moment.min.js"></script>
+<script src="https://raw.github.com/timrwood/moment/2.0.0/min/lang/ru.js"></script>
+<script src="calendar_engine.js"></script>
+</body>
+</html>		
