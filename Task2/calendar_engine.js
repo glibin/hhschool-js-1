@@ -1170,12 +1170,19 @@ $('#searchbox').typeahead({
             event_properties = em.getEventById(eventId).getProperties();
         node.find(".typeahead_title").text(event_properties.title);
         node.find(".typeahead_date").text((moment(event_properties.eventDate)).format('DD-MM-YYYY'));
-
         return node.html();
-
     },
     matcher: function () {return true;},
-    updater: function (eventId) {log("Event has been selected: " + eventId)}
+    updater: function (eventId) {
+        var event = em.getEventById(eventId),
+            date = event.getProperties().eventDate,
+            div_date,
+            div_event;
+        c.setMonth(date);
+        div_date = c.getDivByDate(date);
+        div_event = $(div_date).find("div#" + eventId);
+        div_event.popover('show');
+    }
 });
 //$("input#searchbox").bind('keyup', function () {searchEvents()});
 
