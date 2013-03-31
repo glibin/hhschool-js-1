@@ -123,8 +123,8 @@ Event.prototype._createListeners = function () {
 Event.propertySet = new Set(['id', 'creationDate', 'title', 'eventDate', 'persons', 'description']);
 Event.updatablePropertySet = (new Set(Event.propertySet.asArray())).remove('id').remove('creationDate');
 Event.onPropertyChangeListeners = {
-    'title': '_onTitleChangeListeners',
-    'eventDate': '_onDateChangeListeners'
+    'title':'_onTitleChangeListeners',
+    'eventDate':'_onDateChangeListeners'
     //'persons': '_onPersonsChangeListeners,
     //'description': '_onDescriptionChangeListeners'
 };
@@ -336,7 +336,6 @@ Event.prototype.dump = function () {
 };
 
 
-
 // ### Event Manager ###
 // #####################################################################################################
 
@@ -442,7 +441,7 @@ EventManager.prototype.eventDateChangeListener = function (event, oldDate, newDa
     this._registerEventDate(event, newDate);
 };
 
-EventManager.prototype.eventDeletionListener = function(event) {
+EventManager.prototype.eventDeletionListener = function (event) {
     "use strict";
     log("[EM] Triggered EventDeletionListener");
     this._removeEvent(event.getProperties().id);
@@ -483,7 +482,6 @@ EventManager.prototype.getAllEventsInArray = function () {
     var event,
         eventID,
         arr = [];
-    log("[EM] Generating JSON for EventManager");
     for (eventID in this._eventsById) {
         event = this._eventsById[eventID];
         arr.push(event);
@@ -529,13 +527,13 @@ EventManager.prototype.dump = function () {
 };
 
 
-EventManager.prototype._updateEventInLocalStorage = function(event) {
+EventManager.prototype._updateEventInLocalStorage = function (event) {
     "use strict";
     log("[EM] Updating event in LocalStorage");
     localStorage.setItem('calendar-event:' + event.getProperties().id, event.dump());
 }
 
-EventManager.prototype._updateLocalStorageIndex = function() {
+EventManager.prototype._updateLocalStorageIndex = function () {
     var eventID,
         accumulator = [];
     for (eventID in this._eventsById) {
@@ -545,7 +543,7 @@ EventManager.prototype._updateLocalStorageIndex = function() {
     localStorage.setItem('calendar-index', JSON.stringify(accumulator))
 }
 
-EventManager.prototype._addNewEventToLocalStorage = function(event) {
+EventManager.prototype._addNewEventToLocalStorage = function (event) {
     "use strict";
     var eventID;
     log("[EM] Adding new event in LocalStorage");
@@ -554,15 +552,15 @@ EventManager.prototype._addNewEventToLocalStorage = function(event) {
 }
 
 
-EventManager.prototype._deleteEventFromLocalStorage = function(event_id) {
+EventManager.prototype._deleteEventFromLocalStorage = function (event_id) {
     "use strict";
     log("[EM] Deleting event from LocalStorage");
     localStorage.removeItem('calendar-event:' + event_id);
     this._updateLocalStorageIndex();
 }
 
-EventManager.prototype._initializeFromLocalStorage = function() {
-    if(localStorage.getItem('calendar-index') === null) {
+EventManager.prototype._initializeFromLocalStorage = function () {
+    if (localStorage.getItem('calendar-index') === null) {
         return;
     }
     var eventIds = JSON.parse(localStorage.getItem('calendar-index')),
@@ -575,6 +573,40 @@ EventManager.prototype._initializeFromLocalStorage = function() {
         event = Event.fromJSON(JSON.parse(localStorage.getItem('calendar-event:' + eventId)));
         this._addEventWithoutSavingToLocalStorage(event);
     }
+}
+
+/**
+ * Search for specified text and return array of event which contain it.
+ * (Maybe I'll replace it with Trie search later if I have time. This will make search much more efficient)
+ */
+EventManager.prototype.searchForText = function (text) {
+    var search_result = [],
+        events,
+        event,
+        property,
+        properties,
+        search_in = ["title", "persons", "description"],
+        i,
+        j;
+    if (!text) {
+        return [];
+    }
+    text = text.toLowerCase();
+
+    events = this.getAllEventsInArray();
+    for (i = 0; i < events.length; i++) {
+        event = events[i];
+        properties = event.getProperties();
+
+        for (j = 0; j < search_in.length; j++) {
+            property = search_in[j];
+            if (properties[property].toLowerCase().indexOf(text) != -1) {
+                search_result.push(event);
+                break;
+            }
+        }
+    }
+    return search_result;
 }
 
 
@@ -602,28 +634,28 @@ function Calendar(eventManager) {
 }
 
 monthNames = {
-    0: "Январь",
-    1: "Февраль",
-    2: "Март",
-    3: "Апрель",
-    4: "Май",
-    5: "Июнь",
-    6: "Июль",
-    7: "Август",
-    8: "Сентябрь",
-    9: "Октябрь",
-    10: "Ноябрь",
-    11: "Деабрь"
+    0:"Январь",
+    1:"Февраль",
+    2:"Март",
+    3:"Апрель",
+    4:"Май",
+    5:"Июнь",
+    6:"Июль",
+    7:"Август",
+    8:"Сентябрь",
+    9:"Октябрь",
+    10:"Ноябрь",
+    11:"Деабрь"
 }
 
 dayNames = {
-    0: "Воскресенье",
-    1: "Понедельник",
-    2: "Вторник",
-    3: "Среда",
-    4: "Четверг",
-    5: "Пятница",
-    6: "Суббота"
+    0:"Воскресенье",
+    1:"Понедельник",
+    2:"Вторник",
+    3:"Среда",
+    4:"Четверг",
+    5:"Пятница",
+    6:"Суббота"
 }
 
 /**
@@ -675,11 +707,11 @@ Calendar.prototype._generateAndUpdateTable = function () {
     }
 
     var counter = 0;
-    while(true) {
+    while (true) {
         var tr = document.createElement('tr');
         table.appendChild(tr);
         table.className = 'calendar';
-        for (var i=0; i<7; i++) {
+        for (var i = 0; i < 7; i++) {
             var td = document.createElement('td');
             tr.appendChild(td);
             var div = document.createElement('div');
@@ -732,7 +764,7 @@ Calendar.prototype.redrawCalendar = function () {
 /**
  * Show next month
  */
-Calendar.prototype.nextMonth = function() {
+Calendar.prototype.nextMonth = function () {
     this._date.setMonth(this._date.getMonth() + 1);
     this.redrawCalendar();
 }
@@ -740,7 +772,7 @@ Calendar.prototype.nextMonth = function() {
 /**
  * Show previous month
  */
-Calendar.prototype.previousMonth = function() {
+Calendar.prototype.previousMonth = function () {
     this._date.setMonth(this._date.getMonth() - 1);
     this.redrawCalendar();
 }
@@ -748,7 +780,7 @@ Calendar.prototype.previousMonth = function() {
 /**
  * Set calender to the current month.
  */
-Calendar.prototype.setCurrentMonth = function() {
+Calendar.prototype.setCurrentMonth = function () {
     var date = new Date(); // Start with current moment
     this.setMonth(date);
 }
@@ -756,7 +788,7 @@ Calendar.prototype.setCurrentMonth = function() {
 /**
  * Set calender to the specified month
  */
-Calendar.prototype.setMonth = function(date) {
+Calendar.prototype.setMonth = function (date) {
     if (this._date.getFullYear() != date.getFullYear() || this._date.getMonth() != date.getMonth()) {
         this._date = date;
         this.redrawCalendar();
@@ -794,7 +826,7 @@ Calendar.prototype.addEvent = function (event) {
  * @param date
  * @private
  */
-Calendar.prototype._removeEventFromDiv = function(event, date) {
+Calendar.prototype._removeEventFromDiv = function (event, date) {
     "use strict";
     log("[C] Removing event " + event.getProperties().id + " from div if displayed.");
     var div_holder = this._divsByDates[date.toDateString()];
@@ -813,7 +845,7 @@ Calendar.prototype._removeEventFromDiv = function(event, date) {
  * Returns undefined if specified day is not displayed.
  * @param date
  */
-Calendar.prototype.getDivByDate = function(date) {
+Calendar.prototype.getDivByDate = function (date) {
     var day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     return  this._divsByDates[day.toDateString()];
 }
@@ -830,13 +862,13 @@ Calendar.prototype.eventDateChangeListener = function (event, oldDate, newDate) 
     this.redrawDate(newDate);
 };
 
-Calendar.prototype.eventDeletionListener = function(event) {
+Calendar.prototype.eventDeletionListener = function (event) {
     "use strict";
     log("[C] Triggered EventDeletionListener");
     this._removeEventFromDiv(event, event.getProperties().eventDate);
 }
 
-Calendar.prototype.eventTitleChangeListener = function(event, oldTitle, newTitle) {
+Calendar.prototype.eventTitleChangeListener = function (event, oldTitle, newTitle) {
     "use strict";
     log("[C] Triggered eventTitleChangeListener");
     this.redrawDate(event.getProperties().eventDate);
@@ -850,6 +882,7 @@ function createGetter(propertyName) {
     function getProperty() {
         return this[propertyName];
     }
+
     return getProperty;
 }
 
@@ -859,6 +892,7 @@ function createSetter(propertyName) {
         this[propertyName] = propertyValue;
         return this;
     }
+
     return setProperty;
 }
 
@@ -866,7 +900,7 @@ function guid4() {
     "use strict";
     log("[guid4] Generating new unique uuid");
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     })
 };
@@ -882,13 +916,12 @@ function log(s) {
 }
 
 
-
 // ## Initialization from LocalStorage
 // ############################
 // ### Populate with JSON data if LocalStorage is empty ###
 // #########################################################
 
-if(localStorage.getItem('calendar-index') === null) {
+if (localStorage.getItem('calendar-index') === null) {
     em = EventManager.fromJSON('[\
     {\
         "_id": "55aeb9b6-a8e9-4625-99ea-eddc1fe4f192",\
@@ -929,7 +962,7 @@ if(localStorage.getItem('calendar-index') === null) {
 c = new Calendar(em);
 
 
-// ## Setting hooks and UI bindings
+// ## UI, Hooks and bindings
 // ##############################
 document.getElementById("prevmonth").onclick = c.previousMonth.bind(c);
 document.getElementById("nextmonth").onclick = c.nextMonth.bind(c);
@@ -937,9 +970,9 @@ document.getElementById("currmonth").onclick = c.setCurrentMonth.bind(c);
 document.getElementById("refresh").onclick = c.redrawCalendar.bind(c);
 
 $popover = $('#addArbitraryButton').popover({
-    html : true,
-    placement: "bottom",
-    content: function() {
+    html:true,
+    placement:"bottom",
+    content:function () {
         return $("#addArbitraryDateForm").html();
     }
 });
@@ -948,13 +981,13 @@ $popover = $('#addArbitraryButton').popover({
  * Parse string from top adding button and create event adding dialog with prefilled values.
  * @param button
  */
-function parseAndAddEventFromTopAddInput (button) {
+function parseAndAddEventFromTopAddInput(button) {
     var form = $(button).closest('div.popover-content').find("form.addArbitraryDateFormClass"),
         value = form.find('input#addArbitraryDateFormInput').val(),
         sep = ',',
         date,
         title;
-    if(!value) {
+    if (!value) {
         return;
     }
     if (value.indexOf(';') != -1) {
@@ -993,9 +1026,9 @@ function attachEventUpdatePopover(event_div) {
     var event_id = event_div.id,
         event = em.getEventById(event_id);
     $(event_div).popover({
-        html : true,
-        trigger: 'manual',
-        content: function() {
+        html:true,
+        trigger:'manual',
+        content:function () {
             log('[Hooks] EventUpdatePopover triggered.');
             var form = $("#EventEditForm");
             form.data('event_id', event_id);
@@ -1005,7 +1038,7 @@ function attachEventUpdatePopover(event_div) {
             form.find("textarea#description").text(event.getProperties().description);
             return form.html();
         }
-    }).click( function(e) {
+    }).click(function (e) {
             e.preventDefault();
             e.stopPropagation();
             $(this).popover('toggle');
@@ -1013,7 +1046,7 @@ function attachEventUpdatePopover(event_div) {
 
     $(event_div).
         on('show',
-        function(event) {
+        function (event) {
             $('*').not(event.target).popover('hide');
         });
 };
@@ -1024,9 +1057,9 @@ function attachEventUpdatePopover(event_div) {
  */
 function reattachDayAddEventPopovers() {
     $("div.cell").popover({
-        html : true,
-        trigger: 'manual',
-        content: function() {
+        html:true,
+        trigger:'manual',
+        content:function () {
             log('[Hooks] DayPopover triggered.');
             var date = new Date($(this).data('date'));
             var dateText = moment(date).format("YYYY-MM-DD");
@@ -1037,7 +1070,7 @@ function reattachDayAddEventPopovers() {
             form.find("textarea#description").val('');
             return form.html();
         }
-    }).click( function(e) {
+    }).click(function (e) {
             e.preventDefault();
             e.stopPropagation();
             $(this).popover('toggle');
@@ -1045,7 +1078,7 @@ function reattachDayAddEventPopovers() {
 
     $('div.cell').
         on('show',
-        function(event) {
+        function (event) {
             $('*').not(event.target).popover('hide');
         });
 
@@ -1064,16 +1097,16 @@ function addEventFromForm(button) {
         participants = form.find('input#participants').val(),
         description = form.find('textarea#description').val();
 
-        event = new Event({
-            'title': title,
-            'eventDate': date,
-            'persons': participants,
-            'description': description
-        });
+    event = new Event({
+        'title':title,
+        'eventDate':date,
+        'persons':participants,
+        'description':description
+    });
 
-        c.addEvent(event);
+    c.addEvent(event);
 
-        $('*').popover('hide');
+    $('*').popover('hide');
 }
 
 /**
@@ -1100,15 +1133,40 @@ function updateEventFromForm(button) {
         participants = form.find('input#participants').val(),
         description = form.find('textarea#description').val();
     var new_values = {
-        'title': title,
-        'eventDate': date,
-        'persons': participants,
-        'description': description
+        'title':title,
+        'eventDate':date,
+        'persons':participants,
+        'description':description
     }
     log(new_values);
     $(button).closest(".popover").prev().popover('hide');
     em.getEventById(event_id).updateProperties(new_values);
 }
+
+
+var searchEvents = function (query, process) {
+    log("[Search] Searching");
+    var matched_events = em.searchForText(query),
+        event,
+        i,
+        matched_events_ids = [];
+    for (i = 0; i < matched_events.length; i++) {
+        event = matched_events[i];
+        matched_events_ids.push(event.getProperties().id);
+    }
+    log("[Search] Calling typeahead callback.")
+    process(matched_events_ids);
+}
+
+$('#searchbox').typeahead({
+    source: searchEvents,
+    highlighter: function (eventId) {
+        return "==>" + em.getEventById(eventId).getProperties().title + "<==";
+    },
+    matcher: function () {return true;},
+    updater: function (eventId) {log("Event has been selected: " + eventId)}
+});
+//$("input#searchbox").bind('keyup', function () {searchEvents()});
 
 // ### Library settings ###
 // ##################################
