@@ -33,29 +33,41 @@
 
 
 <div id="addArbitraryDateForm" class="hide">
-    <button id="addArbitraryDateFormCloseButton" type="button" class="close" \
-    onclick="$(&quot;#addArbitraryButton&quot;).popover(&quot;hide&quot;);">&times;</button>
+    <button id="addArbitraryDateFormCloseButton" type="button" class="close" onclick="$(&quot;#addArbitraryButton&quot;).popover(&quot;hide&quot;);">&times;</button>
     <form class="addArbitraryDateFormClass" onsubmit="return false;">
         <input id="addArbitraryDateFormInput" placeholder="2013-03-30, День рождения" type="text"></input>
     </form>
-    <button id="addArbitraryDateFormButton" class="btn btn-success" onclick="parseEventFromInput(this);">Создать</button>
+    <button id="addArbitraryDateFormButton" class="btn btn-success" onclick="parseAndAddEventFromTopAddInput(this);">Создать</button>
     <a id="addArbitraryDateFormButtonCancel" onclick="$(&quot;#addArbitraryButton&quot;).popover(&quot;hide&quot;);">Отмена</a>
 </div>
 
 
 <div id="AddSpecificDateForm" class="hide">
-    <button id="addSpecificDateFormCloseButton" type="button" class="close"
-    \
-    onclick="$(&quot;div.cell&quot;).popover(&quot;hide&quot;);">&times;</button>
+    <button id="addSpecificDateFormCloseButton" type="button" class="close" onclick="$(&quot;div.cell&quot;).popover(&quot;hide&quot;);">&times;</button>
     <form class="addSpecificDateFormClass">
         <input id="title" placeholder="Название" type="text"></input>
-        <input id="date" placeholder="Дата" type="date" data-date-format="dd.mm.yyyy"></input>
+        <input id="date" placeholder="Дата" type="date"></input>
         <input id="participants" placeholder="Участники" type="text"></input>
         <textarea id="description" rows="5" placeholder="Описание" type="text"></textarea>
     </form>
     <div id="AddSpecificDateFormButtons">
         <button id="addSpecificDateFormButtonCreate" class="btn btn-success btn-large" onclick="addEventFromForm(this);">Создать</button>
         <a id="addSpecificDateFormButtonDelete" onclick="$(&quot;div.cell&quot;).popover(&quot;hide&quot;);">Отмена</a>
+    </div>
+
+</div>
+
+<div id="EventEditForm" class="hide">
+    <button id="EventEditFormCloseButton" type="button" class="close" onclick="$(&quot;div.event&quot;).popover(&quot;hide&quot;);">&times;</button>
+    <form class="EventEditFormClass">
+        <input id="title" placeholder="Название" type="text"></input>
+        <input id="date" placeholder="Дата" type="date" data-date-format="dd.mm.yyyy"></input>
+        <input id="participants" placeholder="Участники" type="text"></input>
+        <textarea id="description" rows="5" placeholder="Описание" type="text"></textarea>
+    </form>
+    <div id="EventEditFormButtons">
+        <button id="EventEditFormButtonEdit" class="btn btn-success btn-large" onclick="updateEventFromForm(this);">Обновить</button>
+        <button id="EventEditFormButtonDelete" class="btn btn-danger btn-small pull-right" onclick="deleteEventFromForm(this);">Удалить</a>
     </div>
 
 </div>

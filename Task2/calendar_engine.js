@@ -117,6 +117,7 @@ Event.prototype._createListeners = function () {
     this._onPersonsChangeListeners = [];
     this._onDescriptionChangeListeners = [];
     this._onDeleteListeners = [];
+    this._onAnyPropertyChangeListener = [];
 }
 
 Event.propertySet = new Set(['id', 'creationDate', 'title', 'eventDate', 'persons', 'description']);
@@ -155,7 +156,10 @@ Event.prototype.updateProperties = function (properties) {
     log("[Event] Updating properties on event " + this._id);
     var prop,
         old_value,
-        new_value;
+        new_value,
+        at_least_one_property_has_been_changed = false,
+        i,
+        change_property_listeners = this._onAnyPropertyChangeListener;
     for (prop in properties) {
         if (!properties.hasOwnProperty(prop)) {
             continue;
@@ -169,12 +173,23 @@ Event.prototype.updateProperties = function (properties) {
             continue;
         }
         if (prop == 'eventDate') {
-            new_value = new Date(new_value.getFullYear(), new_value.getMonth(), new_value.getDate());
+            if (new_value) {
+                new_value = new Date(new_value.getFullYear(), new_value.getMonth(), new_value.getDate());
+                if (old_value && new_value && old_value.getTime() === new_value.getTime()) {
+                    continue;
+                }
+            }
         }
         this['_' + prop] = new_value;
         this.onPropertyChange(prop, old_value, new_value);
+        at_least_one_property_has_been_changed = true;
     }
     this._checkProperties();
+    if (at_least_one_property_has_been_changed) {
+        for (i = 0; i < change_property_listeners.length; i++) {
+            change_property_listeners[i](this);
+        }
+    }
     log("[Event] Properties updated on event " + this._id);
 };
 
@@ -275,6 +290,12 @@ Event.prototype.addTitleChangeListener = function (listener) {
     this._onTitleChangeListeners.push(listener);
 };
 
+Event.prototype.addAnyPropertyChangeListener = function (listener) {
+    "use strict";
+    log("[Event] AnyProperty change listener added to event with id: " + this._id);
+    this._onAnyPropertyChangeListener.push(listener);
+};
+
 Event.prototype.toJSON = function () {
     var properties = Event.propertySet.asArray(),
         attribute,
@@ -304,6 +325,17 @@ Event.fromJSON = function (data) {
 };
 
 
+/**
+ * Generate JSON representation of event
+ * @return {string}
+ */
+Event.prototype.dump = function () {
+    "use strict";
+    log("[EM] Dumping Event to JSON");
+    return JSON.stringify(this);
+};
+
+
 
 // ### Event Manager ###
 // #####################################################################################################
@@ -317,6 +349,7 @@ function EventManager() {
     this._eventsByDate = {}; // date->[list of events] mapping
     this._eventsById = {}; // eventId -> event mapping
     log("[EM] Creating new EventManager.");
+    this._initializeFromLocalStorage();
 };
 
 /**
@@ -361,16 +394,27 @@ EventManager.prototype._unregisterEventDate = function (event, date) {
 }
 
 /**
+ * Add event and register it but withouth saving to LocalStorage
+ * @param event
+ * @private
+ */
+EventManager.prototype._addEventWithoutSavingToLocalStorage = function (event) {
+    event.addDateChangeListener(this.eventDateChangeListener.bind(this));
+    event.addDeleteListener(this.eventDeletionListener.bind(this));
+    event.addAnyPropertyChangeListener(this._updateEventInLocalStorage.bind(this));
+    this._registerEventDate(event, event.getProperties().eventDate);
+    this._eventsById[event.getProperties().id] = event;
+}
+
+/**
  * Add event
  * @param event
  */
 EventManager.prototype.addEvent = function (event) {
     "use strict";
     log("[EM] Adding new event to the manager.");
-    event.addDateChangeListener(this.eventDateChangeListener.bind(this));
-    event.addDeleteListener(this.eventDeletionListener.bind(this))
-    this._registerEventDate(event, event.getProperties().eventDate)
-    this._eventsById[event.getProperties().id] = event;
+    this._addEventWithoutSavingToLocalStorage(event);
+    this._addNewEventToLocalStorage(event);
 };
 
 /**
@@ -401,7 +445,8 @@ EventManager.prototype.eventDateChangeListener = function (event, oldDate, newDa
 EventManager.prototype.eventDeletionListener = function(event) {
     "use strict";
     log("[EM] Triggered EventDeletionListener");
-    this._removeEvent(event.getProperties().id)
+    this._removeEvent(event.getProperties().id);
+    this._deleteEventFromLocalStorage(event.getProperties().id);
 }
 
 
@@ -432,6 +477,19 @@ EventManager.prototype.getEventsByDate = function (date) {
         return events;
     }
 };
+
+
+EventManager.prototype.getAllEventsInArray = function () {
+    var event,
+        eventID,
+        arr = [];
+    log("[EM] Generating JSON for EventManager");
+    for (eventID in this._eventsById) {
+        event = this._eventsById[eventID];
+        arr.push(event);
+    }
+    return arr;
+}
 
 
 EventManager.prototype.toJSON = function () {
@@ -471,6 +529,55 @@ EventManager.prototype.dump = function () {
 };
 
 
+EventManager.prototype._updateEventInLocalStorage = function(event) {
+    "use strict";
+    log("[EM] Updating event in LocalStorage");
+    localStorage.setItem('calendar-event:' + event.getProperties().id, event.dump());
+}
+
+EventManager.prototype._updateLocalStorageIndex = function() {
+    var eventID,
+        accumulator = [];
+    for (eventID in this._eventsById) {
+        accumulator.push(eventID);
+    }
+    log("[EM] Updating LocalStorage index.");
+    localStorage.setItem('calendar-index', JSON.stringify(accumulator))
+}
+
+EventManager.prototype._addNewEventToLocalStorage = function(event) {
+    "use strict";
+    var eventID;
+    log("[EM] Adding new event in LocalStorage");
+    this._updateEventInLocalStorage(event);
+    this._updateLocalStorageIndex();
+}
+
+
+EventManager.prototype._deleteEventFromLocalStorage = function(event_id) {
+    "use strict";
+    log("[EM] Deleting event from LocalStorage");
+    localStorage.removeItem('calendar-event:' + event_id);
+    this._updateLocalStorageIndex();
+}
+
+EventManager.prototype._initializeFromLocalStorage = function() {
+    if(localStorage.getItem('calendar-index') === null) {
+        return;
+    }
+    var eventIds = JSON.parse(localStorage.getItem('calendar-index')),
+        eventId,
+        event,
+        i;
+    log("[EM] Initializing from LocalStorage");
+    for (i = 0; i < eventIds.length; i++) {
+        eventId = eventIds[i];
+        event = Event.fromJSON(JSON.parse(localStorage.getItem('calendar-event:' + eventId)));
+        this._addEventWithoutSavingToLocalStorage(event);
+    }
+}
+
+
 // ### Calendar ###
 // #######################################################################################################
 
@@ -480,12 +587,18 @@ EventManager.prototype.dump = function () {
  * @constructor
  */
 function Calendar(eventManager) {
+    var i,
+        events = eventManager.getAllEventsInArray();
     this._eventManager = eventManager;
     this._divsByDates = {}; // to have instant access to the div representing the given date
 
     this._date = new Date(); // Start with current moment
     this._date = new Date(this._date.getFullYear(), this._date.getMonth());
     this.redrawCalendar();
+
+    for (i = 0; i < events.length; i++) {
+        this._addListenersToNewEvent(events[i])
+    }
 }
 
 monthNames = {
@@ -537,6 +650,7 @@ Calendar.prototype.redrawDate = function (date) {
             "Без названия");
         div_event.appendChild(content);
         div_holder.appendChild(div_event);
+        attachEventUpdatePopover(div_event);
     }
     log("[C]...Div has been redrawn.")
 }
@@ -582,7 +696,6 @@ Calendar.prototype._generateAndUpdateTable = function () {
             this._divsByDates[date_to_store.toDateString()] = div_events;
             this.redrawDate(date_to_store);
             $(div).data('date', date_to_store);
-
             td.date = date_to_store;
 
             displayingDay.setDate(displayingDay.getDate() + 1);
@@ -599,7 +712,7 @@ Calendar.prototype._generateAndUpdateTable = function () {
         div.appendChild(table);
     }
 
-    reattach_table_popovers();
+    reattachDayAddEventPopovers();
     log("[C] Table has been regenerated and updated.")
 }
 
@@ -650,6 +763,18 @@ Calendar.prototype.setMonth = function(date) {
     }
 }
 
+
+/**
+ * Add listeners to new event
+ * @param event
+ * @private
+ */
+Calendar.prototype._addListenersToNewEvent = function (event) {
+    event.addDateChangeListener(this.eventDateChangeListener.bind(this));
+    event.addDeleteListener(this.eventDeletionListener.bind(this));
+    event.addTitleChangeListener(this.eventTitleChangeListener.bind(this));
+}
+
 /**
  * Add new event.
  * Adds to eventManager and updates currently displayed calendar.
@@ -660,9 +785,7 @@ Calendar.prototype.addEvent = function (event) {
     log("[C] Adding new event to the calendar.");
     this._eventManager.addEvent(event);
     this.redrawDate(event.getProperties().eventDate);
-    event.addDateChangeListener(this.eventDateChangeListener.bind(this));
-    event.addDeleteListener(this.eventDeletionListener.bind(this));
-    event.addTitleChangeListener(this.eventTitleChangeListener.bind(this));
+    this._addListenersToNewEvent(event);
 };
 
 /**
@@ -759,14 +882,54 @@ function log(s) {
 }
 
 
-// ## Initialization
-// ############################
 
-em = new EventManager();
+// ## Initialization from LocalStorage
+// ############################
+// ### Populate with JSON data if LocalStorage is empty ###
+// #########################################################
+
+if(localStorage.getItem('calendar-index') === null) {
+    em = EventManager.fromJSON('[\
+    {\
+        "_id": "55aeb9b6-a8e9-4625-99ea-eddc1fe4f192",\
+        "_creationDate": "2013-03-30T23:48:26.147Z",\
+        "_title": "Февраль-Март",\
+        "_eventDate": "2013-02-26T20:00:00.000Z",\
+        "_persons": "",\
+        "_description": ""\
+    },\
+    {\
+        "_id": "2113134e-10f5-4edd-a6c5-22afc09bae54",\
+        "_creationDate": "2013-03-30T23:48:48.031Z",\
+        "_title": "Апрель-Май",\
+        "_eventDate": "2013-05-01T20:00:00.000Z",\
+        "_persons": "",\
+        "_description": ""\
+    },\
+    {\
+        "_id": "6acbff55-9763-4604-a0c6-9cce0946859e",\
+        "_creationDate": "2013-03-30T23:49:07.569Z",\
+        "_title": "_На первом месте",\
+        "_eventDate": "2013-03-12T20:00:00.000Z",\
+        "_persons": "",\
+        "_description": ""\
+    },\
+    {\
+        "_id": "5b585d2e-4ee7-4995-85c3-34f17c73ea47",\
+        "_creationDate": "2013-03-30T23:49:59.351Z",\
+        "_title": "На втором месте",\
+        "_eventDate": "2013-03-12T20:00:00.000Z",\
+        "_persons": "",\
+        "_description": ""\
+    }\
+]')
+} else {
+    em = new EventManager();
+}
 c = new Calendar(em);
 
 
-// ## Setting hooks
+// ## Setting hooks and UI bindings
 // ##############################
 document.getElementById("prevmonth").onclick = c.previousMonth.bind(c);
 document.getElementById("nextmonth").onclick = c.nextMonth.bind(c);
@@ -781,8 +944,11 @@ $popover = $('#addArbitraryButton').popover({
     }
 });
 
-
-function parseEventFromInput (button) {
+/**
+ * Parse string from top adding button and create event adding dialog with prefilled values.
+ * @param button
+ */
+function parseAndAddEventFromTopAddInput (button) {
     var form = $(button).closest('div.popover-content').find("form.addArbitraryDateFormClass"),
         value = form.find('input#addArbitraryDateFormInput').val(),
         sep = ',',
@@ -808,43 +974,44 @@ function parseEventFromInput (button) {
 
     $('button#addArbitraryButton').popover('hide');
 
-
     c.setMonth(date.toDate());
-
-    // date = date.format("YYYY-MM-DD");
-
     var div = c.getDivByDate(date.toDate());
     if (!div) {
         log('[Hooks] [parseEventFromInput] Can not get div by date');
         return;
     }
-    log(div);
+    log('[Hooks] [parseEventFromInput] Add arbitrary event string has been parsed. Showing popover for specific date.');
     var context = $(div).closest('div.cell').popover('show');
     $(context.data('popover').$tip[0]).find('input#title').attr('value', title);
-
-
 }
 
-
-
-
-function reattach_table_popovers() {
-    $("div.cell").popover({
+/**
+ * Attach popover to Event div
+ * @param event_div
+ */
+function attachEventUpdatePopover(event_div) {
+    var event_id = event_div.id,
+        event = em.getEventById(event_id);
+    $(event_div).popover({
         html : true,
-        placement: "right",
+        trigger: 'manual',
         content: function() {
-            var date = new Date($(this).data('date'));
-            var dateText = moment(date).format("YYYY-MM-DD");
-            var form = $("#AddSpecificDateForm");
-            form.find("input#date").attr('value', dateText);
-            form.find("input#title").attr('value', '');
-            form.find("input#participants").attr('value', '');
-            form.find("input#description").attr('value', '');
+            log('[Hooks] EventUpdatePopover triggered.');
+            var form = $("#EventEditForm");
+            form.data('event_id', event_id);
+            form.find("input#date").attr('value', moment(event.getProperties().eventDate).format("YYYY-MM-DD"));
+            form.find("input#title").attr('value', event.getProperties().title);
+            form.find("input#participants").attr('value', event.getProperties().persons);
+            form.find("textarea#description").text(event.getProperties().description);
             return form.html();
         }
-    });
+    }).click( function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).popover('toggle');
+        });
 
-    $('*').
+    $(event_div).
         on('show',
         function(event) {
             $('*').not(event.target).popover('hide');
@@ -852,12 +1019,50 @@ function reattach_table_popovers() {
 };
 
 
+/**
+ * Attach popovers to all the divs of currently displayed days.
+ */
+function reattachDayAddEventPopovers() {
+    $("div.cell").popover({
+        html : true,
+        trigger: 'manual',
+        content: function() {
+            log('[Hooks] DayPopover triggered.');
+            var date = new Date($(this).data('date'));
+            var dateText = moment(date).format("YYYY-MM-DD");
+            var form = $("#AddSpecificDateForm");
+            form.find("input#date").attr('value', dateText);
+            form.find("input#title").attr('value', '');
+            form.find("input#participants").attr('value', '');
+            form.find("textarea#description").val('');
+            return form.html();
+        }
+    }).click( function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).popover('toggle');
+        });
+
+    $('div.cell').
+        on('show',
+        function(event) {
+            $('*').not(event.target).popover('hide');
+        });
+
+};
+
+
+/**
+ * Create event from the typed to the form values and add it to the calendar and eventManager.
+ * @param button
+ */
 function addEventFromForm(button) {
+    log('[Hooks] Adding event from form.');
     var form = $(button).closest('div.popover-content').find("form.addSpecificDateFormClass"),
         title = form.find('input#title').val(),
         date = new Date(form.find('input#date').val()),
         participants = form.find('input#participants').val(),
-        description = form.find('textarea#description').val(),
+        description = form.find('textarea#description').val();
 
         event = new Event({
             'title': title,
@@ -871,19 +1076,41 @@ function addEventFromForm(button) {
         $('*').popover('hide');
 }
 
+/**
+ * Delete event from form
+ * @param button
+ */
+function deleteEventFromForm(button) {
+    var event_id = $(button).closest(".popover").prev().attr('id');
+    log('[Hooks] Deleting event from form. event_id: ' + event_id);
+    $(button).closest(".popover").prev().popover('hide');
+    em.getEventById(event_id).remove();
+}
+
+/**
+ * Update event from form values
+ * @param button
+ */
+function updateEventFromForm(button) {
+    var event_id = $(button).closest(".popover").prev().attr('id');
+    log('[Hooks] Updating event from form. event_id: ' + event_id);
+    var form = $(button).closest('div.popover-content').find("form.EventEditFormClass"),
+        title = form.find('input#title').val(),
+        date = new Date(form.find('input#date').val()),
+        participants = form.find('input#participants').val(),
+        description = form.find('textarea#description').val();
+    var new_values = {
+        'title': title,
+        'eventDate': date,
+        'persons': participants,
+        'description': description
+    }
+    log(new_values);
+    $(button).closest(".popover").prev().popover('hide');
+    em.getEventById(event_id).updateProperties(new_values);
+}
+
 // ### Library settings ###
 // ##################################
 moment.lang('ru');
-
-
-
-// # Testing
-log('!!! Starting testing !!!')
-e = new Event({'eventDate': new Date()});
-c.addEvent(e);
-e = new Event({'eventDate': new Date()});
-c.addEvent(e);
-e = new Event({'eventDate': new Date(), 'title': "_ha"});
-c.addEvent(e);
-e.updateProperties({'eventDate': new Date(2013,1,27)});
 
