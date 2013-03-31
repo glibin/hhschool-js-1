@@ -1149,7 +1149,12 @@ var searchEvents = function (query, process) {
     var matched_events = em.searchForText(query),
         event,
         i,
-        matched_events_ids = [];
+        matched_events_ids = [],
+        now = (new Date()).getTime();
+    // Sort by closeness to the present moment
+    matched_events.sort(function(a,b) {
+        return Math.abs(a.getProperties().eventDate.getTime() - now) - Math.abs(b.getProperties().eventDate.getTime() - now);
+    });
     for (i = 0; i < matched_events.length; i++) {
         event = matched_events[i];
         matched_events_ids.push(event.getProperties().id);
