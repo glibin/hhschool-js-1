@@ -118,3 +118,20 @@ div#AddSpecificDateFormButtons {
 a#addSpecificDateFormButtonDelete {
     float: right;
 }
+
+/* Search */
+.typeahead_wrapper {
+    display: block;
+    height: 30px;
+}
+
+.typeahead_title {
+    font-weight: bold;
+}
+
+.typeahead_date {
+    font-size: .8em;
+    margin-top: 0px;
+
+    color: #9d9d9d;
+}

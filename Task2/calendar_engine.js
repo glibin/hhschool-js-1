@@ -1166,7 +1166,13 @@ var searchEvents = function (query, process) {
 $('#searchbox').typeahead({
     source: searchEvents,
     highlighter: function (eventId) {
-        return "==>" + em.getEventById(eventId).getProperties().title + "<==";
+        var node = $("div.typeahead_wrapper"),
+            event_properties = em.getEventById(eventId).getProperties();
+        node.find(".typeahead_title").text(event_properties.title);
+        node.find(".typeahead_date").text((moment(event_properties.eventDate)).format('DD-MM-YYYY'));
+
+        return node.html();
+
     },
     matcher: function () {return true;},
     updater: function (eventId) {log("Event has been selected: " + eventId)}
