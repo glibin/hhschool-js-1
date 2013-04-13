@@ -314,6 +314,8 @@ function drawCalendar(element, year, month) {
                 }
                 events.addEvent(ev);
                 $('.day__item').popover('hide');
+                draw(moment(parseInt(form.date)).year(), moment(parseInt(form.date)).month());
+
 
             });
             $(".popover-edition__form").submit(function (event){
@@ -444,7 +446,6 @@ $( ".header-search__input" ).typeahead({
         return items;
     },
     highlighter: function (item) {
-        console.log(item);
         return "<div>"+ events.events[item].name +"</div><div>" +  moment(events.events[item].eventDate).format("LL") + "</div>";
     },
     updater: function (item) {
